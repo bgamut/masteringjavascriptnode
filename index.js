@@ -1,10 +1,6 @@
 var fs = require('fs');
 var path = require('path');
 var WavDecoder = require('wav-decoder');
-//var WaveFile = require('wavefile');
-//var ooura = require('ooura');
-//var FFT = require ('fft');
-//var FFT = require('fft.js');
 var lib = require('ml-fft');
 var WavEncoder = require('wav-encoder');
 var FFT = lib.FFT;
@@ -31,61 +27,106 @@ readFile(wavPath).then((buffer)=>{
     //console.log(audioData.channelData[0]);// returns float 32 array
     
     //the following number needs to adjust according to the length of the array or we need to change the length of the original array
-    var bins=4;
-    /*
-    var f =new FFT(bins);
+    var bins=1024;
     
-    var compLeft=f.toComplexArray(left);
-    var fftLeft = f.createComplexArray();
-    var ifftLeft = f.createComplexArray();
-    f.transform(fftLeft,compLeft);
-    */
-   var left= audioData.channelData[0];
-   var right= audioData.channelData[1];
-   FFT.init(bins);
-   var reLeft = new Float32Array(bins);
-   var imLeft = new Float32Array(bins);
-   var reRight = new Float32Array(bins);
-   var imRight = new Float32Array(bins);
-   var outLeft = new Float32Array(bins);
-   var outRight = new Float32Array(bins);
-
-   for (var i = 0; i<left.length; i++){
-       reLeft[i]=left[i]
-       reRight[i]=right[i]
+    var left= audioData.channelData[0];
+    var right= audioData.channelData[1];
+    
+    FFT.init(bins);
+    var originalLength =left.length;
+    //var iterations = (originalLength/bins)*2-1;
+    var iterations = (originalLength/bins);
+    var originalSR=audioData.sampleRate;
+    var remainderAdded = originalLength%bins+originalLength;
+    var reLeftOne = new Float32Array(bins);
+    var reLeftTwo = new Float32Array(bins);
+    var imLeftOne = new Float32Array(bins);
+    var imLeftTwo = new Float32Array(bins);
+    var reRight = new Float32Array(bins);
+    var imRight = new Float32Array(bins);
+    var outLeft = new Float32Array(originalLength);
+    var outRight = new Float32Array(originalLength);
+    imLeftOne.fill(0);
+    imLeftTwo.fill(0);
+    imRightOne.fill(0);
+    imRightTwo.fill(0);
+    reLeftOne.fill(0);
+    reRightOne.fill(0);
+    reLeftTwo.fill(0);
+    reRightTwo.fill(0);
+    outLeft.fill(0);
+    outRight.fill(0);
+    /*
+    for (var i = 0; i<originalLength; i++){
+        reLeft[i]=left[i]
+        reRight[i]=right[i]
     }
-    imLeft.fill(0);
-    imRight.fill(0);
+    */
+    for (var i = 0; i<iterations; i++){
+        for (var j = 0; j<bins/2; j++){
+            /*
+            if (i%2===0){
+                ///window functioning first half of a bin
+                reLeftOne[j]=Math.cos(j*Math.PI()/2)*reLeft[bins*i+j]
+            }
+            else{
+                ///window functioning second half of a bin
+                reLeftTwo[j]=Math.sin(j*Math.PI()/2)*reLeft[bins*i+j]
+            }
+            */
+            //windowing function applied to the samples
+            reLeftOne[j]=Math.cos(j*Math.PI()/2)*left[bins*i+j]
+            reLeftTwo[j]=Math.sin(j*Math.PI()/2)*left[bins*i+j]
+            FFT.fft(reLeftOne,imLeftOne);
+            FFT.fft(reLeftTwo,imLeftTwo);
+
+
+        }
+        //TODO : do something to the FFT
+        // reminder1: phase=Math.atan2(r/i)
+        // reminder2: amplitude = Math.sqrt(r*r+i*i)
+        // reminder3: newR=oldR*amplitudeRatio && newI=oldI*amplitudeRatio
+        //
+        FFT.ifft(reLeftOne,imLeftOne);
+        FFT.ifft(reLeftTwo,imLeftTwo);
+        for (var k = 0; k<bins/2; k++){
+
+            outLeft[bins*i+k]+=reLeftOne[k]+reLeftTwo[k]
+
+        }
+
+    }
     //console.log(reLeft);
     //console.log(reRight);
-    FFT.fft(reLeft,imLeft);
-    FFT.fft(reRight,imRight)
+    
 
     //do something with the re and im array
-    FFT.ifft(reLeft,imLeft);
-    FFT.ifft(reRight,imRight)
+    
     //console.log(reLeft);
     //console.log(reRight);
-    for (var i = 0; i<left.length; i++){
-        outLeft[i]=Math.trunc((reLeft[i]/2.0+0.5)*65535.00)
-        outRight[i]=Math.trunc((reRight[i]/2.0+0.5)*65535.00)
-     }  
+    /*
+    for (var i = 0; i<originalLength; i++){
+        //default format needed for AudioData is {float:false,bitDepth:16}
+        //outLeft[i]=Math.trunc((reLeft[i]/2.0+0.5)*65535.00)
+        //outRight[i]=Math.trunc((reRight[i]/2.0+0.5)*65535.00)
+        outLeft[i]=(reLeft[i]);
+        outRight[i]=(reRight[i]);
+     }
+     */  
     
     var mastered ={
-        sampleRate:44100,
+        float:true,
+        symmetric:true,
+        bitDepth:32,
+        sampleRate:originalSR,
         channelData:[
             outLeft,
             outRight
         ]
     } 
-    //var new_wav=new WaveFile();
-    // the following needs to be changed
-    //console.log(outLeft)
-    //new_wav.fromScratch(2,audioData.sampleRate,'16',[outLeft,outRight]);
     
-    //var outputFileStream = new FileWriter('./master.wav')
-    //fs.writeFileSync('master.wav',new_wav.toBuffer());
     WavEncoder.encode(mastered).then((buffer)=>{
         fs.writeFileSync('mastered.wav',new Buffer(buffer));
     });
 })
+
