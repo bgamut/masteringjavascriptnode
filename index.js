@@ -15,13 +15,87 @@ var readFile = (filepath)=>{
         })
     })
 }
-// relative path to the .wav file
-var wavPath = path.join(__dirname,'masteringjavascriptnode','master.wav')
+// relative path to the .wav files
+var rwavPath = path.join(__dirname,'masteringjavascriptnode','reference.wav')
+var swavPath = path.join(__dirname,'masteringjavascriptnode','master.wav')
 
+var refTable = (rWavPath)=>{
+    readFile(swavPath).then((buffer)=>{
+        return WavDecoder.decode(buffer);
+    }).then (function(audioData){
+        var bins = 1024
+        var left = audioData.channelData[0];
+        var right = audioData.channelData[1];
+        
+        var sampleRate = audioData.sampleRate;
+        var truncatedLength = left.length%bins*bins;
+        var mono = new Float32Array(truncatedLength);
+        var side = new Float32Array(truncatedLength);
 
+        for (var i =0; i<truncatedLength; i++){
+            mono[i] = (left[i]+right[i])/2;
+            side[i] = left[i]-mono
+        }
+        var iterations = truncatedLength/bins;
+        //parseFloat() & .toString is needed to add the number to proper json (I think)
+        //e.g. row.mean=(parseFloat(row.mean)+2).toString()
+        //update::changed from var to function for prototype creation 
+        function row(){
+            this.monoMean = 0;
+            this.monoSD = 0;
+            //this.monoRatio = 0;
+            this.sideMean = 0;
+            this.sideSD = 0;
+            //this.sideRatio = 0;
+        }
+        //var tableFull = new Float32Array[left[truncatedLength]]
+        var table = new Array(bins)
+        for (var i =0; i<bins; i++){
+            table[i]=new row;
+        }
+        var reMono = new Float32Array(bins);
+        var imMono = new Float32Array(bins);
+        var reSide = new Float32Array(bins);
+        var imSide = new Float32Array(bins);
+        imMono.fill(0);
+        imSide.fill(0);
+        FFT.init(bins);
+        var savedFFT = new Array(iterations);
+        function savedFFTRow(){
+            this.mono = new Float32Array(bins);
+            this.side= new Float32Array(bins);
+        }
+        // collecting mean value for middle and side
+        for (var i = 0; i<iterations; i++){
+            savedFFT[i]=new savedFFTRow;
+            for (var j = 0; j<bins; j++){
+                reMono[j]=mono[bins*i+j]
+                reSide[j]=side[bins*i+j]
+            }
+            FFT.fft(reMono,imMono);
+            FFT.fft(reSide,imSide);
+            //accumulate mean per bin per iterations and get over all mean in the end
+            for (var k = 0; k<bins; k++){
+                savedFFT[i].mono[k]=reMono[k]
+                savedFFT[i].side[k]=reSide[k]
+                table[k].monoMean+=reMono[k]/iterations
+                table[k].sideMean+=reSide[k]/iterations
+            }
+        }
+        
+        // collecting standard deviation value for middle and side
+        for (var i = 0; i<iterations; i++){
+            for (var j = 0; j<bins; j++){
+                table[i].monoSD+=Math.abs(table[i].monoMean-savedFFT[i].mono[j])/iterations
+                table[i].sideSD+=Math.abs(table[i].sideMean-savedFFT[i].side[j])/iterations
+            }
+        }
 
+    return table
+    })
+}
 
-readFile(wavPath).then((buffer)=>{
+readFile(swavPath).then((buffer)=>{
     return WavDecoder.decode(buffer);
 }).then (function(audioData){
     //console.log(audioData.channelData[0]);// returns float 32 array
@@ -46,6 +120,7 @@ readFile(wavPath).then((buffer)=>{
     var imRight = new Float32Array(bins);
     var outLeft = new Float32Array(originalLength);
     var outRight = new Float32Array(originalLength);
+    var ampRatio = new Float32Array(remainerAdded);
     imLeftOne.fill(0);
     imLeftTwo.fill(0);
     imRightOne.fill(0);
@@ -86,12 +161,17 @@ readFile(wavPath).then((buffer)=>{
         // reminder1: phase=Math.atan2(r/i)
         // reminder2: amplitude = Math.sqrt(r*r+i*i)
         // reminder3: newR=oldR*amplitudeRatio && newI=oldI*amplitudeRatio
-        //
+        for (var k=0; k<bins; k++){
+            reLeftOne[k]*=ampRatio[k];
+            reLeftTwo[k]*=ampRatio[k];
+            imLeftOne[k]*=ampRatio[k];
+            imLeftTwo[k]*=ampRatio[k];
+        }
         FFT.ifft(reLeftOne,imLeftOne);
         FFT.ifft(reLeftTwo,imLeftTwo);
-        for (var k = 0; k<bins/2; k++){
+        for (var l = 0; l<bins/2; l++){
 
-            outLeft[bins*i+k]+=reLeftOne[k]+reLeftTwo[k]
+            outLeft[bins*i+l]+=reLeftOne[l]+reLeftTwo[l]
 
         }
 
