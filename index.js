@@ -30,40 +30,44 @@ var table = (rWavPath)=>{
         var truncatedLength = left.length%bins*bins;
         var mono = new Float32Array(truncatedLength);
         var side = new Float32Array(truncatedLength);
-
-        for (var i =0; i<truncatedLength; i++){
-            mono[i] = (left[i]+right[i])/2;
-            side[i] = left[i]-mono;
-        }
         var iterations = truncatedLength/bins;
 
-        function savedFFTRow(){
-            this.mono = new Float32Array(bins);
-            this.side = new Float32Array(bins);
-            this.monoCos = new Float32Array(bins);
-            this.monoSin = new Float32Array(bins);
-            this.sideCos = new Float32Array(bins);
-            this.sideSin = new Float32Array(bins);
-            this.mono.fill(0);
-            this.side.fill(0);
-            this.monoCos.fill(0);
-            this.monoSin.fill(0);
-            this.sideSin.fill(0);
-            this.sideCos.fill(0);
+        function bin(){
+            this.mono= 0;
+            this.side = 0;
+
+            this.monoFFTReal = 0;
+            this.sideFFTReal = 0;
+
+            this.monoFFTImag = 0;
+            this.sideFFTImag = 0;
+
+            this.monoFFTAmp = 0;
+            this.sideFFTAmp = 0;
+
         };
         
-        function row(){
+        function iteration(){
             this.monoMean = 0;
             this.monoSD = 0;
             this.sideMean = 0;
             this.sideSD = 0;
-            this.savedFFT = new Array(iterations);
+            this.bi = new Array(bins);
+            
         }
-        var t = new Array(bins)
-        for (var i =0; i<bins; i++){
-            t[i]=new row;
-            for (var j=0; j<iterations; j++){
-                t[i].savedFFT[j]=new savedFFTRow;
+        function t(){
+            this.it= new Array(iterations)
+            this.monoMean = 0;
+            this.sideMean = 0;
+            this.monoFFTMean = new Float32Array(bins);
+            this.sideFFTMean = new Float32Array(bins);
+            this.monoFFTSD = new Float32Array(bins);
+            this.sideFFTSD = new Float32Array(bins);
+            for (var i =0; i<iteration; i++){
+                t.it[i]=new iteration;
+                for (var j=0; j<bins; j++){
+                    t.it[i].bi[j]=new bin;
+                }
             }
         }
         
@@ -71,58 +75,48 @@ var table = (rWavPath)=>{
         var imMono = new Float32Array(bins);
         var reSide = new Float32Array(bins);
         var imSide = new Float32Array(bins);
-        var reMonoCos = new Float32Array(bins);
-        var imMonoOne = new Float32Array(bins);
-        var reMonoSin = new Float32Array(bins);
-        var imMonoTwo = new Float32Array(bins);
-        var reSideCos = new Float32Array(bins);
-        var imSideOne = new Float32Array(bins);
-        var reSideSin = new Float32Array(bins);
-        var imSideTwo = new Float32Array(bins);
+
         imMono.fill(0);
         imSide.fill(0);
-        imMonoOne.fill(0);
-        imMonoTwo.fill(0);
-        imSideOne.fill(0);
-        imSideTwo.fill(0);
 
         FFT.init(bins);
-        
-        // collecting mean value for middle and side
+        // transform left/right to mono/side
+        for (var i =0; i<truncatedLength; i++){
+            mono[i] = (left[i]+right[i])/2;
+            side[i] = left[i]-mono;
+        }
+        // collecting FFT means for mono and side per bin
         for (var i = 0; i<iterations; i++){
-            
             for (var j = 0; j<bins; j++){
                 reMono=mono[bins*i+j];
                 reSide=side[bins*i+j];
-                reMonoCos[j]=Math.cos(j*Math.PI()/2)*mono[bins*i+j];
-                reMonoSin[j]=Math.sin(j*Math.PI()/2)*mono[bins*i+j];
-                reSideCos[j]=Math.cos(j*Math.PI()/2)*side[bins*i+j];
-                reSideSin[j]=Math.sin(j*Math.PI()/2)*side[bins*i+j];
-                
+                t.it[i].bin[j].mono=mono[bins*i+j];
+                t.it[i].bin[j].side=side[bins*i+j];
             }
             FFT.fft(reMono,imMono);
             FFT.fft(reSide,imSide);
-            FFT.fft(reMonoCos,imMonoOne);
-            FFT.fft(reMonoSin,imMonoTwo);
-            FFT.fft(reSideCos,imSideOne);
-            FFT.fft(reSideSin,imSideTwo);
+
             //accumulate mean per bin per iterations and get over all mean in the end
             for (var k = 0; k<bins; k++){
-                t.savedFFT[i].mono[k]=reMono[k];
-                t.savedFFT[i].side[k]=reSide[k];
-                t.savedFFT[i].monoCos[k]=reMonoCos[k]
-                t.savedFFT[i].monoSin[k]=reMonoSin[k]
-                t.savedFFT[i].sideCos[k]=reSideCos[k]
-                t.savedFFT[i].sideSin[k]=reSideSin[k]
-                t[k].monoMean+=reMono[k]/iterations
-                t[k].sideMean+=reSide[k]/iterations
+                
+                t.it[i].bin[k].monoFFTReal=reMono[k];
+                t.it[i].bin[k].sideFFTReal=reSide[k];
+                
+                t.it[i].bin[k].monoFFTImag=imMono[k];
+                t.it[i].bin[k].sideFFTImag=imSide[k];
+
+                t.it[i].bin[k].monoFFTAmp = Math.sqrt(Math.pow(reMono[k],2)+Math.pow(imMono[k],2))
+                t.it[i].bin[k].sideFFTAmp = Math.sqrt(Math.pow(reSide[k],2)+Math.pow(imSide[k],2))
+
+                t.monoFFTMean[k]+=t.it[i].bin[k].monoFFTAmp/iterations
+                t.sideFFTMean[k]+=t.it[i].bin[k].sideFFTAmp/iterations
             }
         }
         // collecting standard deviation value for middle and side
         for (var i = 0; i<iterations; i++){
             for (var j = 0; j<bins; j++){
-                t[i].monoSD+=Math.abs(t[i].monoMean-t[i].savedFFT[i].mono[j]/iterations)
-                t[i].sideSD+=Math.abs(t[i].sideMean-t[i].savedFFT[i].side[j]/iterations)
+                t.monoFFTSD[j]+=Math.abs(t.it[i].monoFFTMean[j]-t.it[i].bin[j].monoFFTAmp)/iterations
+                t.sideFFTSD[j]+=Math.abs(t.it[i].sideFFTMean[j]-t.it[i].bin[j].sideFFTAmp)/iterations
             }
         }
 
