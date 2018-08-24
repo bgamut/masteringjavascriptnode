@@ -19,18 +19,88 @@ var readFile = (filepath)=>{
 var rWavPath = path.join(__dirname,'masteringjavascriptnode','reference.wav')
 var sWavPath = path.join(__dirname,'masteringjavascriptnode','master.wav')
 
-var table = (rWavPath)=>{
+function cubicSpline(x,y,ratio){
+    var n=x.length-1;
+    var h = new Float32Array(n);
+    for (var i=0; i<n; i++){
+        h[i]=x[i+1]-x[i];
+    }
+    var al = new Float32Array(n-1);
+    for (var i=1; i<n; i++){
+        al[i]=3*((y[i+1]-y[i])/h[i] - (y[i]-y[i-1])/h[i-1]);
+    }
+    al[0]=0;
+    var l = new Float32Array(n+1);
+    var u = new Float32Array(n+1);
+    var z = new Float32Array(n+1);
+    l.fill(1);
+    u.fill(0);
+    z.fill(0);
+    for (var i=1; i<n; i++){
+        l[i] = 2*(x[i+1]-x[i-1]) - h[i-1]*u[i-1];
+        u[i] = h[i]/l[i];
+        z[i] = (al[i] - h[i-1]*z[i-1])/l[i];
+    }
+    var b = new Float32Array(n+1);
+    var c = new Float32Array(n+1);
+    var d = new Float32Array(n+1);
+    l.fill(0);
+    u.fill(0);
+    z.fill(0);
+    for (var i = n-1; i>=0; i--){
+        c[i] = z[i] - u[i]*c[i+1]
+        b[i] = (y[i+1]-y[i])/h[i] - h[i]*(c[i+1] + 2*c[i])/3
+        d[i] = (c[i+1]-c[i])/(3*h[i])
+    }
+    var result = [y, b, c, d];
+    var xs = new Float32Array(newLength);
+    var ys = new Float32Array(newLength);
+    var coi;
+    for(var i =0; i<newLength; i++){
+        xs[i]=i/ratio;
+        //corresponding old index 
+        coi=Math.floor(i/ratio);
+        ys[i]=result[0][coi]+result[1][coi]*(xs[i]-coi)+result[2][coi]*(xs[i]-coi)**2+result[3][coi]*(xs[i]-coi)**3
+    }
+    return ys;
+}
+//returns a new array with a given sample rate
+function SRConverter(oldArray,oldSR,newSR){
+    //spline function
+    var ratio = newSR/oldSR;
+    //var interval = oldSR/newSR;
+    var oldLength = oldArray.length;
+    var newLength = oldArray.length*ratio;
+    var x = new Float32Array(oldArray.length);
+    for (var i =0; i<oldLength; i++){
+        x[i]=i;
+    }
+    var y = oldArray;
+    var newArray = cubicSpline(x,y,ratio);
+    return newArray;
+}
+
+function table(rWavPath){
     readFile(rWavPath).then((buffer)=>{
         return WavDecoder.decode(buffer);
     }).then (function(audioData){
         var bins = 1024
-        var left = audioData.channelData[0];
-        var right = audioData.channelData[1];
         var sampleRate = audioData.sampleRate;
-        var truncatedLength = left.length%bins*bins;
-        var mono = new Float32Array(truncatedLength);
-        var side = new Float32Array(truncatedLength);
-        var iterations = truncatedLength/bins;
+        if (sampleRate==44100){
+            var left = audioData.channelData[0];
+            var right = audioData.channelData[1];
+        }
+        else{
+            var left = SRConverter(audioData.channelData[0],sampleRate,44100);
+            var right = SRConverter(audioData.channelData[1],sampleRate,44100);
+        }
+        var oldLength = left.length;
+        var newLength = oldLength%bins*(bins+1);
+        var mono = new Float32Array(newLength);
+        var side = new Float32Array(newLength);
+        mono.fill(0);
+        side.fill(0);
+        var iterations = (newLength/bins)*2-1;
 
         function bin(){
             this.mono= 0;
@@ -63,6 +133,8 @@ var table = (rWavPath)=>{
             this.sideFFTMean = new Float32Array(bins);
             this.monoFFTSD = new Float32Array(bins);
             this.sideFFTSD = new Float32Array(bins);
+            this.length = newLength;
+            this.sampleRate = sampleRate;
             for (var i =0; i<iteration; i++){
                 t.it[i]=new iteration;
                 for (var j=0; j<bins; j++){
@@ -80,16 +152,16 @@ var table = (rWavPath)=>{
         imSide.fill(0);
 
         FFT.init(bins);
-        // transform left/right to mono/side
-        for (var i =0; i<truncatedLength; i++){
-            mono[i] = (left[i]+right[i])/2;
-            side[i] = left[i]-mono;
+        // transform left/right to mono/side with zero padding
+        for (var i =0; i<oldLength; i++){
+            mono[i+bins/2] = (left[i]+right[i])/2;
+            side[i+bins/2] = left[i]-mono;
         }
         // collecting FFT means for mono and side per bin
         for (var i = 0; i<iterations; i++){
             for (var j = 0; j<bins; j++){
-                reMono=mono[bins*i+j];
-                reSide=side[bins*i+j];
+                reMono=mono[bins/2*i+j]*Math.sin(j/(bins-1)*Math.PI);
+                reSide=side[bins/2*i+j]*Math.sin(j/(bins-1)*Math.PI);
                 t.it[i].bin[j].mono=mono[bins*i+j];
                 t.it[i].bin[j].side=side[bins*i+j];
             }
@@ -125,6 +197,18 @@ var table = (rWavPath)=>{
 }
 
 
+function reconstruct(signalTable,referenceTable){
+    function ratio(bins){
+        this.mono=new Float32Array(bins)
+        this.side=new Float32Array(bins)
+    }
+    bins=1024;
+    ratio = new ratio(bins);
+    for (var i =0; i<bins; i++){
+        ratio.mono[i]=referenceTable.monoFFTMean[i]/signalTable.monoFFTMean[i];
+        ratio.side[i]=referenceTable.sideFFTMean[i]/signalTable.sideFFTMean[i];
+    }
+}
 
 
 
