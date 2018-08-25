@@ -80,7 +80,12 @@
         progress.textContent = '100%';
         setTimeout("document.getElementById('progress_bar').className='';", 2000);
         var arrayBuffer = this.result;
-      console.log(arrayBuffer)
+        var byteOffset= 0;
+        var bufferlength=0;
+        //var floatBuffer = new Float32Array(arrayBuffer,byteOffset,bufferlength)
+        var intBuffer= new Int16Array(arrayBuffer)
+        //var floatBuffer = new Float32Array(arrayBuffer)
+        console.log(intBuffer)
       }
   
       
