@@ -28,8 +28,8 @@ function readSingleFile(e) {
     }
     var reader = new FileReader();
     reader.onload = function(e) {
-      //var contents = e.target.result;
-      displayContents(file);
+      var contents = e.target.result;
+      displayContents(contents);
     };
     
   }
