@@ -15,6 +15,23 @@ var readFile = (filepath)=>{
         })
     })
 }
+function displayContents(contents) {
+    var element = document.getElementById('file-content');
+    element.textContent = contents;
+  }
+function readSingleFile(e) {
+    var file = e;
+    if (!file) {
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      //var contents = e.target.result;
+      displayContents(file);
+    };
+    
+  }
+
 // relative path to the .wav files
 var rWavPath = path.join(__dirname,'masteringjavascriptnode','reference.wav')
 var sWavPath = path.join(__dirname,'masteringjavascriptnode','master.wav')

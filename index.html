@@ -1,0 +1,33 @@
+<script src=index.js></script>
+
+<input type="file" id="file-input" />
+<h3>Contents of the file:</h3>
+<p id="demo"></p>
+<script>
+document.getElementById('file-input').addEventListener('change', displayContents,false);
+function displayContents(contents) {
+    var x = document.getElementById("file-input");
+var txt = "";
+if ('files' in x) {
+    if (x.files.length == 0) {
+        txt = "Select one or more files.";
+    } else {
+        for (var i = 0; i < x.files.length; i++) {
+            txt +=i+1;
+            var file = x.files[i];
+            txt=table(x.value);
+            /*
+            if ('name' in file) {
+                txt += "name: " + file.name;
+            }
+            if ('size' in file) {
+                txt += "size: " + file.size + " bytes";
+            }
+            */
+        }
+    }
+    console.log(x.files)
+} 
+document.getElementById ("demo").innerText=txt
+  }
+</script>
