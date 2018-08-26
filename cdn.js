@@ -320,16 +320,17 @@ function handleFileSelect(evt) {
     for (var i = 0; i<intBuffer.length; i++){
         bitwise.push(intBuffer[i]&0x0000ffff);
         bitwise.push((intBuffer[i]&0xffff0000)>>16);
-       stringwise.push((intBuffer[i]&0x0000ffff).toString(16));
-       stringwise.push(((intBuffer[i]&0xffff0000)>>16).toString(16));
+        stringwise.push((intBuffer[i]&0x0000ffff).toString(16));
+        stringwise.push(((intBuffer[i]&0xffff0000)>>16).toString(16));
     }
+    console.log(intBuffer)
     console.log(bitwise)
     console.log(stringwise)
     
     
     var bufferSampleRate=intBuffer[6];
-    var channels=(arrayBuffer[6]&0xffff0000)>>16;
-    var bitrate = intBuffer[10];
+    var channels=(arrayBuffer[6]&0xffff0000)>>16; 
+    var bitrate = intBuffer[7]/bufferSampleRate/channels*8
     /*
     var bitdepth = null;
     if (bitrate ==8){
@@ -344,9 +345,8 @@ function handleFileSelect(evt) {
     */
     var max_number = 2**(bitrate-1);
     var subchunk = intBuffer[5];
-    var bitdepth = subchunk/channels;
-    var sampleLength=(intBuffer[2]-36)/subchunk;
-    var bitrate = bitdepth*8;
+    var bitdepth = bitrate/8;
+    var sampleLength=(intBuffer[1]-36)/bitdepth/channels;
     var bufferLeft =new Array;
     var bufferRight=new Array;
     if(bitrate==16 && channels==2){
