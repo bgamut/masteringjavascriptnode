@@ -64,7 +64,7 @@ function handleFileSelect(evt) {
     var intBuffer= new Int16Array(arrayBuffer)
     console.log(intBuffer)
     var bufferLength=(((intBuffer[3]<<16)+intBuffer[2])/2)-15;
-    var bufferSampleRate=((intbuffer[13]<<16)+intBuffer[12])
+    var bufferSampleRate=((intBuffer[13]<<16)+intBuffer[12])
     console.log(bufferSampleRate)
     /*
     contex.decodeAudioData(arrayBuffer,(
