@@ -75,7 +75,5 @@ function handleFileSelect(evt) {
     }
 
     */
-
-
+    }
 }
-
