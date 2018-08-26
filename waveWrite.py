@@ -20,7 +20,7 @@ lFreq =  880.00        # A
 rFreq = 1760.00        # A
 
 # 8 bit stereo sound
-sampleWidth = 2
+sampleWidth = 4
 nChannels = 1
 
 wavef = wave.open('sound.wav','w')
@@ -31,8 +31,8 @@ wavef.setframerate(sampleRate)
 'nSamples = duration * sampleRate'
 nSamples =8
 for i in range(int(nSamples)):
-    l = i/8
-    r = -1*i/8
+    l = -1*i/8
+    r = 1*i/8
     if(nChannels==2):
         data = packSoundFrame(nChannels, sampleWidth, [l,r])
 

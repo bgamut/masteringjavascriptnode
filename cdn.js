@@ -329,7 +329,7 @@ function handleFileSelect(evt) {
     
     
     var bufferSampleRate=intBuffer[6];
-    var channels=(arrayBuffer[6]&0xffff0000)>>16; 
+    var channels=bitwise[11]
     var bitrate = intBuffer[7]/bufferSampleRate/channels*8
     /*
     var bitdepth = null;
@@ -349,6 +349,10 @@ function handleFileSelect(evt) {
     var sampleLength=(intBuffer[1]-36)/bitdepth/channels;
     var bufferLeft =new Array;
     var bufferRight=new Array;
+    console.log('sr : '+bufferSampleRate)
+    console.log('channels : '+channels)
+    console.log('bitrate : ' +bitrate)
+    console.log('sampleLength : ' +sampleLength)
     if(bitrate==16 && channels==2){
         for (var i=0; i<Math.ceil(sampleLength/2); i++){
             bufferLeft.push(intBuffer[11+i]&0x0000ffff/max_number)
