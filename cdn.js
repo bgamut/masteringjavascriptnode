@@ -1,8 +1,8 @@
 var reader=new FileReader;
 var progress = document.querySelector('.percent');
 window.AudioContext = window.AudioContext || window.webkitAudioContext;
-var context = new AudioContext();
-
+//var context = new AudioContext();
+var context = window.AudioContext || window.webkitAudioContext;
 function abortRead() {
     reader.abort();
 }
