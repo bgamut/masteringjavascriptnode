@@ -61,10 +61,25 @@ function handleFileSelect(evt) {
     //var floatBuffer = new Float32Array(arrayBuffer,byteOffset,bufferlength)
     //var floatBuffer = new Float32Array(arrayBuffer)
 
-    var intBuffer= new Int64Array(arrayBuffer)
+    var intBuffer= new Int32Array(arrayBuffer)
     console.log(intBuffer)
-    var bufferLength=(((intBuffer[3]<<16)+intBuffer[2])/2)-15;
-    var bufferSampleRate=((intBuffer[13]<<16)+intBuffer[12])
+    
+    
+    var bufferSampleRate=intBuffer[6];
+    var bitrate = intBuffer[10];
+    var bitdepth = null;
+    if (bitrate ==8){
+        bitdepth =1;
+    }
+    else if(bitrate ==16){
+        bitdepth=2;
+    }
+    else if(bitrate ==32){
+        bitdepth=4;
+    }
+    var max_number = 2**(bitrate-1);
+    var channels=(intBuffer[7]/intBuffer[6])/bitdepth;
+    var bufferLength=(intBuffer[2]-36)/(bitdepth*channels)
     console.log(bufferSampleRate)
     /*
     contex.decodeAudioData(arrayBuffer,(
@@ -74,6 +89,21 @@ function handleFileSelect(evt) {
     console.log(sound)
     }
 
+    bit[bitdepth] = [null,8,16,null,32]
+    36+bitdepth*channels*numberofsamples
+
+    40 (8bit mono 4 samp)
+    44 (8bin mono 8 samp) 44100->44100
+    44 (8bit stereo 4 samp)
+    52 (8bit stereo 8 samp) 44100->88200
+    44 (16bit mono 4 samp)
+    52 (16bit mono 8 samp) 44100->88200
+    52 (16bit stereo 4 samp)
+    68 (16bit stereo 8 samp) 44100->176400
+    52 (32bit mono 4 samp)
+    68 (32bit stereo 4 samp)
+
     */
+   
     }
 }
