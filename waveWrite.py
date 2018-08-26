@@ -31,10 +31,14 @@ wavef.setframerate(sampleRate)
 'nSamples = duration * sampleRate'
 nSamples =8
 for i in range(int(nSamples)):
-    l = 1
-    r = -1
-    'data = packSoundFrame(nChannels, sampleWidth, [l,r])'
-    data = packSoundFrame(nChannels, sampleWidth, [l])
+    l = i/8
+    r = -1*i/8
+    if(nChannels==2):
+        data = packSoundFrame(nChannels, sampleWidth, [l,r])
+
+    else:
+        data = packSoundFrame(nChannels, sampleWidth, [l])
+
 
     wavef.writeframesraw( data )
 wavef.close()

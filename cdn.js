@@ -79,8 +79,38 @@ function handleFileSelect(evt) {
     }
     var max_number = 2**(bitrate-1);
     var channels=(intBuffer[7]/intBuffer[6])/bitdepth;
-    var bufferLength=(intBuffer[2]-36)/(bitdepth*channels)
-    console.log(bufferSampleRate)
+    var sampleLength=(intBuffer[2]-36)/(bitdepth*channels)
+    var bufferLeft =new Array;
+    var bufferRight=new Array;
+    if(bitrate==16 && channels==2){
+        for (var i=0; i<Math.ceil(sampleLength/2); i++){
+            bufferLeft.push(intBuffer[11+i]&0x0000ffff/max_number)
+            bufferRight.push(intBuffer[11+i]&0xffff0000/max_number)
+        }
+    }
+    else if (bitrate==16 && channels ==1){
+        for (var i=0; i<Math.ceil(sampleLength/2); i++){
+            bufferLeft.push(intBuffer[11+i]&0x0000ffff/max_number)
+            bufferLeft.push(intBuffer[11+i]&0xffff0000/max_number)
+            bufferRight.push(intBuffer[11+i]&0x0000ffff/max_number)
+            bufferRight.push(intBuffer[11+i]&0xffff0000/max_number)
+        }
+    }
+    if(bitrate==32 && channels==2){
+        for (var i=0; i<sampleLength; i++){
+            bufferLeft.push(intBuffer[11+i]&0x0000ffff/max_number)
+            bufferRight.push(intBuffer[11+i]&0xffff0000/max_number)
+        }
+    }
+    else if (bitrate==32 && channels ==1){
+        for (var i=0; i<sampleLength; i++){
+            bufferLeft.push(intBuffer[11+i]&0x0000ffff/max_number)
+            bufferLeft.push(intBuffer[11+i]&0xffff0000/max_number)
+            bufferRight.push(intBuffer[11+i]&0x0000ffff/max_number)
+            bufferRight.push(intBuffer[11+i]&0xffff0000/max_number)
+        }
+    }
+    //console.log(bufferSampleRate)
     /*
     contex.decodeAudioData(arrayBuffer,(
         function(buffer){
