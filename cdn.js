@@ -61,7 +61,7 @@ function handleFileSelect(evt) {
     //var floatBuffer = new Float32Array(arrayBuffer,byteOffset,bufferlength)
     //var floatBuffer = new Float32Array(arrayBuffer)
 
-    var intBuffer= new Int16Array(arrayBuffer)
+    var intBuffer= new Int64Array(arrayBuffer)
     console.log(intBuffer)
     var bufferLength=(((intBuffer[3]<<16)+intBuffer[2])/2)-15;
     var bufferSampleRate=((intBuffer[13]<<16)+intBuffer[12])
