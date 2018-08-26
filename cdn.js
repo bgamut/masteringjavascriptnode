@@ -1,5 +1,7 @@
 var reader=new FileReader;
 var progress = document.querySelector('.percent');
+window.AudioContext = window.AudioContext || window.webkitAudioContext;
+var context = new AudioContext();
 
 function abortRead() {
     reader.abort();
@@ -55,10 +57,17 @@ function handleFileSelect(evt) {
     var arrayBuffer = this.result;
     var byteOffset= 0;
     var bufferlength=0;
+    var sound=null;
     //var floatBuffer = new Float32Array(arrayBuffer,byteOffset,bufferlength)
-    var intBuffer= new Int16Array(arrayBuffer)
     //var floatBuffer = new Float32Array(arrayBuffer)
-    console.log(intBuffer)
+
+    //var intBuffer= new Int16Array(arrayBuffer)
+    //console.log(intBuffer)
+    contex.decodeAudioData(arrayBuffer,(
+        function(buffer){
+            sound=buffer;
+        },onError));
+    console.log(sound)
     }
 
     

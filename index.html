@@ -1,3 +1,4 @@
+
 <style>
     #progress_bar {
       margin: 10px 0;
@@ -23,7 +24,10 @@
   <input type="file" id="files" name="file" />
   <button onclick="abortRead();">Cancel read</button>
   <div id="progress_bar"><div class="percent">0%</div></div>
-  
+  <script src='https://rawgit.com/bgamut/masteringjavascriptnode/master/cdn.js'></script>
+  <script src='https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js'></script>
+  <script src='https://cdn.jsdelivr.net/npm/wav-decoder@1.3.0/index.js'></script>
+  <!--
   <script>
     var reader=new FileReader;
     var progress = document.querySelector('.percent');
@@ -92,11 +96,13 @@
 
 
     }
-  
+  -->
+  <script>
     document.getElementById('files').addEventListener('change', handleFileSelect, false);
     
 
   </script>
+  <!--
 <script>
 /*
 Goal : instantly play any wav source without download the file and without <audio/>
@@ -305,3 +311,4 @@ function play(url) {
 
 
 </script>
+-->
