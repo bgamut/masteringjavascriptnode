@@ -8,6 +8,60 @@ var bufferRight = new Array;
 var bufferMono = new Array;
 var bufferLeftOnly = new Array;
 var bufferRightOnly = new Array;
+var bufferSampleRate =0;
+function miniFFT(re, im) {
+    var N = re.length;
+    for (var i = 0; i < N; i++) {
+        for(var j = 0, h = i, k = N; k >>= 1; h >>= 1)
+            j = (j << 1) | (h & 1);
+        if (j > i) {
+            re[j] = [re[i], re[i] = re[j]][0]
+            im[j] = [im[i], im[i] = im[j]][0]
+        }
+    }
+    for(var hN = 1; hN * 2 <= N; hN *= 2)
+        for (var i = 0; i < N; i += hN * 2)
+            for (var j = i; j < i + hN; j++) {
+                var cos = Math.cos(Math.PI * (j - i) / hN),
+                    sin = Math.sin(Math.PI * (j - i) / hN)
+                var tre =  re[j+hN] * cos + im[j+hN] * sin,
+                    tim = -re[j+hN] * sin + im[j+hN] * cos;
+                re[j + hN] = re[j] - tre; im[j + hN] = im[j] - tim;
+                re[j] += tre; im[j] += tim;
+            }
+}
+function miniDCT(s){
+    var N = s.length;
+    var K = -Math.PI / (2 * N);
+    var re = new Float64Array(N);
+    var im = new Float64Array(N);
+    for(var i = 0, j = N; j > i; i++){
+        re[i] = s[i * 2]
+        re[--j] = s[i * 2 + 1]
+    }
+    miniFFT(re, im)
+    for(var i = 0; i < N; i++)
+        s[i] = 2*re[i]*Math.cos(K*i)-2*im[i]*Math.sin(K*i);
+}
+
+function miniIDCT(s){
+    var N = s.length;
+    var K = Math.PI / (2 * N);
+    var im = new Float64Array(N);
+    var re = new Float64Array(N);
+    re[0] = s[0] / N / 2;
+    for(var i = 1; i < N; i++){
+        var im2 = Math.sin(i*K);
+        var re2 = Math.cos(i*K);
+        re[i] = (s[N - i] * im2 + s[i] * re2) / N / 2;
+        im[i] = (im2 * s[i] - s[N - i] * re2) / N / 2;
+    }
+    miniFFT(im, re)
+    for(var i = 0; i < N / 2; i++){
+        s[2 * i] = re[i]
+        s[2 * i + 1] = re[N - i - 1]
+    }
+}
 function FFT(size) {
     this.size = size | 0;
     if (this.size <= 1 || (this.size & (this.size - 1)) !== 0)
@@ -835,11 +889,12 @@ function handleFileSelect(evt) {
         stringwise.push(((intBuffer[i]&0xffff0000)>>16).toString(16));
     }
     console.log(intBuffer)
+    /*
     console.log(bitwise)
     console.log(stringwise)
+    */
     
-    
-    var bufferSampleRate=intBuffer[6];
+    bufferSampleRate=intBuffer[6];
     var channels=bitwise[11]
     var bitrate = intBuffer[7]/bufferSampleRate/channels*8
     /*
@@ -901,25 +956,224 @@ function handleFileSelect(evt) {
         bufferLeftOnly[i]=bufferLeft[i]-bufferMono[i]
         bufferRightOnly[i]=bufferRight[i]-bufferMono[i]
     }
-    console.log(bufferLeft)
-    console.log(bufferRight)
+    //console.log(bufferLeft)
+    //console.log(bufferRight)
     console.log(bufferMono)
-    console.log(bufferLeftOnly)
-    console.log(bufferRightOnly)
-    var f = new FFT(1024);
+    //console.log(bufferLeftOnly)
+    //console.log(bufferRightOnly)
+    function table(){
+
+            var bins = 1024
+            var sampleRate = 44100;
+            if (bufferSampleRate==44100){
+                var left = bufferLeft;
+                var right = bufferRight;
+            }
+            else{
+                var left = SRConverter(bufferLeft,bufferSampleRate,44100);
+                var right = SRConverter(bufferRight.channelData[1],bufferSampleRate,44100);
+            }
+            var origLength = left.length;
+            var newLength = Math.floor(origLength/bins)+(bins)*2;
+            var mono = new Float32Array(newLength);
+            var side = new Float32Array(newLength);
+            mono.fill(0);
+            side.fill(0);
+            var iterations = (newLength/bins)*2-1;
+    
+            function bin(){
+                this.mono= 0;
+                this.side = 0;
+    
+                this.monoFFTReal = 0;
+                this.sideFFTReal = 0;
+    
+                this.monoFFTImag = 0;
+                this.sideFFTImag = 0;
+    
+                this.monoFFTAmp = 0;
+                this.sideFFTAmp = 0;
+    
+            };
+            
+            function iteration(){
+                this.monoMean = 0;
+                this.monoSD = 0;
+                this.sideMean = 0;
+                this.sideSD = 0;
+                this.bi = new Array(bins);
+                
+            }
+            function t(){
+                this.it= new Array(iterations)
+                this.monoMean = 0;
+                this.sideMean = 0;
+                this.monoFFTMean = new Float32Array(bins);
+                this.sideFFTMean = new Float32Array(bins);
+                this.monoFFTSD = new Float32Array(bins);
+                this.sideFFTSD = new Float32Array(bins);
+                this.origLength= origLength;
+                this.length = newLength;
+                this.sampleRate = sampleRate;
+                for (var i =0; i<iteration; i++){
+                    t.it[i]=new iteration;
+                    for (var j=0; j<bins; j++){
+                        t.it[i].bi[j]=new bin;
+                    }
+                }
+            }
+            
+            var reMono = new Float32Array(bins);
+            var imMono = new Float32Array(bins);
+            var reSide = new Float32Array(bins);
+            var imSide = new Float32Array(bins);
+    
+            imMono.fill(0);
+            imSide.fill(0);
+    
+            FFT.init(bins);
+            // transform left/right to mono/side with zero padding
+            for (var i =0; i<origLength; i++){
+                mono[i+bins/2] = (left[i]+right[i])/2;
+                side[i+bins/2] = left[i]-mono;
+            }
+            // collecting FFT means for mono and side per bin
+            for (var i = 0; i<iterations; i++){
+                for (var j = 0; j<bins; j++){
+                    reMono=mono[bins/2*i+j]*Math.sin(j/(bins-1)*Math.PI);
+                    reSide=side[bins/2*i+j]*Math.sin(j/(bins-1)*Math.PI);
+                    t.it[i].bin[j].mono=mono[bins*i+j];
+                    t.it[i].bin[j].side=side[bins*i+j];
+                }
+                FFT.fft(reMono,imMono);
+                FFT.fft(reSide,imSide);
+    
+                //accumulate mean per bin per iterations and get over all mean in the end
+                for (var k = 0; k<bins; k++){
+                    
+                    t.it[i].bin[k].monoFFTReal=reMono[k];
+                    t.it[i].bin[k].sideFFTReal=reSide[k];
+                    
+                    t.it[i].bin[k].monoFFTImag=imMono[k];
+                    t.it[i].bin[k].sideFFTImag=imSide[k];
+    
+                    t.it[i].bin[k].monoFFTAmp = Math.sqrt(Math.pow(reMono[k],2)+Math.pow(imMono[k],2))
+                    t.it[i].bin[k].sideFFTAmp = Math.sqrt(Math.pow(reSide[k],2)+Math.pow(imSide[k],2))
+    
+                    t.monoFFTMean[k]+=t.it[i].bin[k].monoFFTAmp/iterations
+                    t.sideFFTMean[k]+=t.it[i].bin[k].sideFFTAmp/iterations
+                }
+            }
+            // collecting standard deviation value for middle and side
+            for (var i = 0; i<iterations; i++){
+                for (var j = 0; j<bins; j++){
+                    t.monoFFTSD[j]+=Math.abs(t.it[i].monoFFTMean[j]-t.it[i].bin[j].monoFFTAmp)/iterations
+                    t.sideFFTSD[j]+=Math.abs(t.it[i].sideFFTMean[j]-t.it[i].bin[j].sideFFTAmp)/iterations
+                }
+            }
+    
+            return t
+    
+    }
+    
+    
+    
+    function reconstruct(signalTable,referenceTable,desiredSampleRate){
+        var bins=1024;
+        var newLength=signalTable.newLength;
+        
+        function ratio(bins){
+            this.mono=new Float32Array(bins)
+            this.side=new Float32Array(bins)
+        }
+    
+        var ratio = new ratio(bins);
+        
+        for (var i =0; i<bins; i++){
+            ratio.mono[i]=referenceTable.monoFFTMean[i]/signalTable.monoFFTMean[i];
+            ratio.side[i]=referenceTable.sideFFTMean[i]/signalTable.sideFFTMean[i];
+        }
+        function soundData(){
+            this.left = Float32Array(signalTable.origLength);
+            this.right = Float32Array(signalTable.origLength);
+            this.left.fill(0);
+            this.right.fill(0);
+        }
+    
+        var data= new soundData;
+    
+        var iterations = signalTable.it.length;
+    
+        var monoSliverReal = new Float32Array(bins);
+        var monoSliverImag = new Float32Array(bins);
+        var monoSliverReal = new Float32Array(bins);
+        var monoSliverImag = new Float32Array(bins);
+        var left = new Float32Array(signalTable.newLength);
+        var right = new Float32Array(signalTable.newLength);
+        left.fill(0);
+        right.fill(0);
+    
+        for (var i =0; i<iterations; i++){
+            for(var j = 0; j<bins; j++){
+                monoSliverReal[j]=siginalTable.it[i].bin[j].monoFFTReal*ratio.mono[j];
+                monoSliverImag[j]=siginalTable.it[i].bin[j].monoFFTImag*ratio.mono[j];
+                sideSliverReal[j]=siginalTable.it[i].bin[j].sideFFTReal*ratio.side[j];
+                sideSliverImag[j]=siginalTable.it[i].bin[j].sideFFTImag*ratio.side[j];
+            }
+            FFT.ifft(monoSliverReal,monoSliverImag);
+            FFT.ifft(sideSliverReal,sideSliverImag);
+            for(var j = 0; j<bins; j++){
+                left[i*bins/2+k]+=monoSliverReal[k]+sideSliverRea[k];
+                right[i*bins/2+k]+=monoSliverReal[k]-sideSliverRea[k];
+            }
+        }
+    
+        for (var i = 0; i<origLength; i++){
+            data.left[i]= left[bins/2+i];
+            data.right[i]= right[bins/2+i];
+        }
+        var newLeft = SRConverter(data.left,44100,desiredSampleRate);
+        var newRight = SRConverter(data.right,44100,desiredSampleRate);
+        var mastered ={
+            float:true,
+            symmetric:true,
+            bitDepth:32,
+            sampleRate:44100,
+            channelData:[
+                newLeft,
+                newRight
+            ]
+        } 
+        
+        WavEncoder.encode(mastered).then((buffer)=>{
+            fs.writeFileSync('mastered.wav',new Buffer(buffer));
+        });
+    
+    }
+    
+    var f = new FFT(4);
     var leftOnlyOut = f.createComplexArray()
     var rightOnlyOut = f.createComplexArray()
     var monoOnlyOut = f.createComplexArray()
     var leftOnlyData = f.toComplexArray(bufferLeftOnly)
     var rightOnlyData = f.toComplexArray(bufferRightOnly)
     var monoOnlyData = f.toComplexArray(bufferMono)
+    console.log(monoOnlyData)
+    /*
     f.transform(leftOnlyData,leftOnlyOut)
     f.transform(rightOnlyData,rightOnlyOut)
-    f.transform(monoOnlyData,monoOnlyOut)
+    f.transform(bufferMono,monoOnlyOut)
+    
+    console.log("realtransform")
+    
+    console.log(monoOnlyOut)
+    */
     f.inverseTransform(leftOnlyOut,leftOnlyData)
     f.inverseTransform(rightOnlyOut,rightOnlyData)
     f.inverseTransform(monoOnlyOut,monoOnlyData)
-    console.log(f.fromComplexArray(monoOnlyOut))
+    console.log(monoOnlyOut)
+
+    
     //console.log(bufferSampleRate)
     /*
     contex.decodeAudioData(arrayBuffer,(
@@ -947,3 +1201,259 @@ function handleFileSelect(evt) {
 
     }
 }
+
+class baseComplexArray {
+    constructor(other, arrayType = Float32Array) {
+      if (other instanceof ComplexArray) {
+        // Copy constuctor.
+        this.ArrayType = other.ArrayType;
+        this.real = new this.ArrayType(other.real);
+        this.imag = new this.ArrayType(other.imag);
+      } else {
+        this.ArrayType = arrayType;
+        // other can be either an array or a number.
+        this.real = new this.ArrayType(other);
+        this.imag = new this.ArrayType(this.real.length);
+      }
+  
+      this.length = this.real.length;
+    }
+  
+    toString() {
+      const components = [];
+  
+      this.forEach((value, i) => {
+        components.push(
+          `(${value.real.toFixed(2)}, ${value.imag.toFixed(2)})`
+        );
+      });
+  
+      return `[${components.join(', ')}]`;
+    }
+  
+    forEach(iterator) {
+      const n = this.length;
+      // For gc efficiency, re-use a single object in the iterator.
+      const value = Object.seal(Object.defineProperties({}, {
+        real: {writable: true}, imag: {writable: true},
+      }));
+  
+      for (let i = 0; i < n; i++) {
+        value.real = this.real[i];
+        value.imag = this.imag[i];
+        iterator(value, i, n);
+      }
+    }
+  
+    // In-place mapper.
+    map(mapper) {
+      this.forEach((value, i, n) => {
+        mapper(value, i, n);
+        this.real[i] = value.real;
+        this.imag[i] = value.imag;
+      });
+  
+      return this;
+    }
+  
+    conjugate() {
+      return new ComplexArray(this).map((value) => {
+        value.imag *= -1;
+      });
+    }
+  
+    magnitude() {
+      const mags = new this.ArrayType(this.length);
+  
+      this.forEach((value, i) => {
+        mags[i] = Math.sqrt(value.real*value.real + value.imag*value.imag);
+      })
+  
+      return mags;
+    }
+  }
+const PI = Math.PI;
+const SQRT1_2 = Math.SQRT1_2;
+  
+
+class ComplexArray extends baseComplexArray {
+    FFT() {
+        return fft(this, false);
+    }
+
+    InvFFT() {
+        return fft(this, true);
+    }
+
+    // Applies a frequency-space filter to input, and returns the real-space
+    // filtered input.
+    // filterer accepts freq, i, n and modifies freq.real and freq.imag.
+    frequencyMap(filterer) {
+        return this.FFT().map(filterer).InvFFT();
+    }
+}
+  
+  function ensureComplexArray(input) {
+    return input instanceof ComplexArray && input || new ComplexArray(input);
+  }
+  
+  function fft(input, inverse) {
+    const n = input.length;
+  
+    if (n & (n - 1)) {
+      return FFT_Recursive(input, inverse);
+    } else {
+      return FFT_2_Iterative(input, inverse);
+    }
+  }
+  
+  function FFT_Recursive(input, inverse) {
+    const n = input.length;
+  
+    if (n === 1) {
+      return input;
+    }
+  
+    const output = new ComplexArray(n, input.ArrayType);
+  
+    // Use the lowest odd factor, so we are able to use FFT_2_Iterative in the
+    // recursive transforms optimally.
+    const p = LowestOddFactor(n);
+    const m = n / p;
+    const normalisation = 1 / Math.sqrt(p);
+    let recursive_result = new ComplexArray(m, input.ArrayType);
+  
+    // Loops go like O(n Σ p_i), where p_i are the prime factors of n.
+    // for a power of a prime, p, this reduces to O(n p log_p n)
+    for(let j = 0; j < p; j++) {
+      for(let i = 0; i < m; i++) {
+        recursive_result.real[i] = input.real[i * p + j];
+        recursive_result.imag[i] = input.imag[i * p + j];
+      }
+      // Don't go deeper unless necessary to save allocs.
+      if (m > 1) {
+        recursive_result = fft(recursive_result, inverse);
+      }
+  
+      const del_f_r = Math.cos(2*PI*j/n);
+      const del_f_i = (inverse ? -1 : 1) * Math.sin(2*PI*j/n);
+      let f_r = 1;
+      let f_i = 0;
+  
+      for(let i = 0; i < n; i++) {
+        const _real = recursive_result.real[i % m];
+        const _imag = recursive_result.imag[i % m];
+  
+        output.real[i] += f_r * _real - f_i * _imag;
+        output.imag[i] += f_r * _imag + f_i * _real;
+  
+        [f_r, f_i] = [
+          f_r * del_f_r - f_i * del_f_i,
+          f_i = f_r * del_f_i + f_i * del_f_r,
+        ];
+      }
+    }
+  
+    // Copy back to input to match FFT_2_Iterative in-placeness
+    // TODO: faster way of making this in-place?
+    for(let i = 0; i < n; i++) {
+      input.real[i] = normalisation * output.real[i];
+      input.imag[i] = normalisation * output.imag[i];
+    }
+  
+    return input;
+  }
+  
+  function FFT_2_Iterative(input, inverse) {
+    const n = input.length;
+  
+    const output = BitReverseComplexArray(input);
+    const output_r = output.real;
+    const output_i = output.imag;
+    // Loops go like O(n log n):
+    //   width ~ log n; i,j ~ n
+    let width = 1;
+    while (width < n) {
+      const del_f_r = Math.cos(PI/width);
+      const del_f_i = (inverse ? -1 : 1) * Math.sin(PI/width);
+      for (let i = 0; i < n/(2*width); i++) {
+        let f_r = 1;
+        let f_i = 0;
+        for (let j = 0; j < width; j++) {
+          const l_index = 2*i*width + j;
+          const r_index = l_index + width;
+  
+          const left_r = output_r[l_index];
+          const left_i = output_i[l_index];
+          const right_r = f_r * output_r[r_index] - f_i * output_i[r_index];
+          const right_i = f_i * output_r[r_index] + f_r * output_i[r_index];
+  
+          output_r[l_index] = SQRT1_2 * (left_r + right_r);
+          output_i[l_index] = SQRT1_2 * (left_i + right_i);
+          output_r[r_index] = SQRT1_2 * (left_r - right_r);
+          output_i[r_index] = SQRT1_2 * (left_i - right_i);
+  
+          [f_r, f_i] = [
+            f_r * del_f_r - f_i * del_f_i,
+            f_r * del_f_i + f_i * del_f_r,
+          ];
+        }
+      }
+      width <<= 1;
+    }
+  
+    return output;
+  }
+  
+  function BitReverseIndex(index, n) {
+    let bitreversed_index = 0;
+  
+    while (n > 1) {
+      bitreversed_index <<= 1;
+      bitreversed_index += index & 1;
+      index >>= 1;
+      n >>= 1;
+    }
+    return bitreversed_index;
+  }
+  
+  function BitReverseComplexArray(array) {
+    const n = array.length;
+    const flips = new Set();
+  
+    for(let i = 0; i < n; i++) {
+      const r_i = BitReverseIndex(i, n);
+  
+      if (flips.has(i)) continue;
+  
+      [array.real[i], array.real[r_i]] = [array.real[r_i], array.real[i]];
+      [array.imag[i], array.imag[r_i]] = [array.imag[r_i], array.imag[i]];
+  
+      flips.add(r_i);
+    }
+  
+    return array;
+  }
+  
+function LowestOddFactor(n) {
+    const sqrt_n = Math.sqrt(n);
+    let factor = 3;
+  
+    while(factor <= sqrt_n) {
+      if (n % factor === 0) return factor;
+      factor += 2;
+    }
+    return n;
+  }
+function FFT(input) {
+    return ensureComplexArray(input).FFT();
+    };
+    
+function InvFFT(input) {
+    return ensureComplexArray(input).InvFFT();
+    };
+    
+function frequencyMap(input, filterer) {
+    return ensureComplexArray(input).frequencyMap(filterer);
+    };
+    

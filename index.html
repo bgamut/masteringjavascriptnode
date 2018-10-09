@@ -35,9 +35,13 @@
   <script src="https://cdn.jsdelivr.net/npm/fft.js@4.0.3/lib/fft.js"></script>
   -->
   <script src="cdn.js"></script>
+<!--
+  <script src="https://cdn.jsdelivr.net/combine/npm/jsfft@0.0.3/dist/complex_array.min.js,npm/jsfft@0.0.3/dist/fft.min.js,npm/jsfft@0.0.3/dist/fft_image.min.js"></script>
   
-  
-
+  <script src="https://cdn.jsdelivr.net/npm/jsfft@0.0.3/dist/complex_array.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsfft@0.0.3/dist/fft.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsfft@0.0.3/dist/fft_image.min.js"></script>
+-->
   <script>
     
     document.getElementById('files').addEventListener('change', handleFileSelect, false);
@@ -46,9 +50,8 @@
     var mono = bufferMono;
     var leftOnly = bufferLeftOnly;
     var rightOnly = bufferRightOnly;
-    console.log("is this working at all?")
-    console.log(FFT)
-    
+    var array = new Float32Array;
+    var id = new ComplexArray(8,array.ArrayType);
 
   </script>
   
