@@ -769,24 +769,23 @@ function handleFileSelect(evt) {
     console.log(bufferMono)
     //console.log(bufferLeftOnly)
     //console.log(bufferRightOnly)
-    function table(){
+var bins = 1024
+function table(left, right, originalSampleRate){
 
-            var bins = 1024
+            
             var sampleRate = 44100;
-            if (bufferSampleRate==44100){
-                var left = bufferLeft;
-                var right = bufferRight;
+            if (originalSampleRate==44100){
+                var left = left;
+                var right = right;
             }
             else{
-                var left = SRConverter(bufferLeft,bufferSampleRate,44100);
-                var right = SRConverter(bufferRight.channelData[1],bufferSampleRate,44100);
+                var left = SRConverter(left,originalSampleRate,44100);
+                var right = SRConverter(right,originalSampleRate,44100);
             }
             var origLength = left.length;
             var newLength = Math.floor(origLength/bins)+(bins)*2;
-            var mono = new Float32Array(newLength);
-            var side = new Float32Array(newLength);
-            mono.fill(0);
-            side.fill(0);
+            var mono = new Float64Array(newLength);
+            var side = new Float64Array(newLength);
             var iterations = (newLength/bins)*2-1;
     
             function bin(){
@@ -831,15 +830,9 @@ function handleFileSelect(evt) {
                 }
             }
             
-            var reMono = new Float32Array(bins);
-            var imMono = new Float32Array(bins);
-            var reSide = new Float32Array(bins);
-            var imSide = new Float32Array(bins);
+
+
     
-            imMono.fill(0);
-            imSide.fill(0);
-    
-            FFT.init(bins);
             // transform left/right to mono/side with zero padding
             for (var i =0; i<origLength; i++){
                 mono[i+bins/2] = (left[i]+right[i])/2;
@@ -847,23 +840,25 @@ function handleFileSelect(evt) {
             }
             // collecting FFT means for mono and side per bin
             for (var i = 0; i<iterations; i++){
+                var monoBin = new baseComplexArray(bins);
+                var sideBin = new baseComplexArray(bins);
                 for (var j = 0; j<bins; j++){
-                    reMono=mono[bins/2*i+j]*Math.sin(j/(bins-1)*Math.PI);
-                    reSide=side[bins/2*i+j]*Math.sin(j/(bins-1)*Math.PI);
+                    monoBin.real[j]=mono[bins/2*i+j]*Math.sin(j/(bins-1)*Math.PI);
+                    sideBin.real[j]=side[bins/2*i+j]*Math.sin(j/(bins-1)*Math.PI);
                     t.it[i].bin[j].mono=mono[bins*i+j];
                     t.it[i].bin[j].side=side[bins*i+j];
                 }
-                FFT.fft(reMono,imMono);
-                FFT.fft(reSide,imSide);
+                monoBin.FFT()
+                sideBin.FFT()
     
                 //accumulate mean per bin per iterations and get over all mean in the end
                 for (var k = 0; k<bins; k++){
                     
-                    t.it[i].bin[k].monoFFTReal=reMono[k];
-                    t.it[i].bin[k].sideFFTReal=reSide[k];
+                    t.it[i].bin[k].monoFFTReal=monoBin.real[k];
+                    t.it[i].bin[k].sideFFTReal=sideBin.real[k];
                     
-                    t.it[i].bin[k].monoFFTImag=imMono[k];
-                    t.it[i].bin[k].sideFFTImag=imSide[k];
+                    t.it[i].bin[k].monoFFTImag=monoBin.imag[k];
+                    t.it[i].bin[k].sideFFTImag=sideBin.imag[k];
     
                     t.it[i].bin[k].monoFFTAmp = Math.sqrt(Math.pow(reMono[k],2)+Math.pow(imMono[k],2))
                     t.it[i].bin[k].sideFFTAmp = Math.sqrt(Math.pow(reSide[k],2)+Math.pow(imSide[k],2))
@@ -886,78 +881,77 @@ function handleFileSelect(evt) {
     
     
     
-    function reconstruct(signalTable,referenceTable,desiredSampleRate){
-        var bins=1024;
-        var newLength=signalTable.newLength;
-        
-        function ratio(bins){
-            this.mono=new Float32Array(bins)
-            this.side=new Float32Array(bins)
-        }
+function reconstruct(signalTable,referenceTable,desiredSampleRate){
     
-        var ratio = new ratio(bins);
-        
-        for (var i =0; i<bins; i++){
-            ratio.mono[i]=referenceTable.monoFFTMean[i]/signalTable.monoFFTMean[i];
-            ratio.side[i]=referenceTable.sideFFTMean[i]/signalTable.sideFFTMean[i];
-        }
-        function soundData(){
-            this.left = Float32Array(signalTable.origLength);
-            this.right = Float32Array(signalTable.origLength);
-            this.left.fill(0);
-            this.right.fill(0);
-        }
+    var newLength=signalTable.newLength;
     
-        var data= new soundData;
-    
-        var iterations = signalTable.it.length;
-    
-        var monoSliverReal = new Float32Array(bins);
-        var monoSliverImag = new Float32Array(bins);
-        var monoSliverReal = new Float32Array(bins);
-        var monoSliverImag = new Float32Array(bins);
-        var left = new Float32Array(signalTable.newLength);
-        var right = new Float32Array(signalTable.newLength);
-        left.fill(0);
-        right.fill(0);
-    
-        for (var i =0; i<iterations; i++){
-            for(var j = 0; j<bins; j++){
-                monoSliverReal[j]=siginalTable.it[i].bin[j].monoFFTReal*ratio.mono[j];
-                monoSliverImag[j]=siginalTable.it[i].bin[j].monoFFTImag*ratio.mono[j];
-                sideSliverReal[j]=siginalTable.it[i].bin[j].sideFFTReal*ratio.side[j];
-                sideSliverImag[j]=siginalTable.it[i].bin[j].sideFFTImag*ratio.side[j];
-            }
-            FFT.ifft(monoSliverReal,monoSliverImag);
-            FFT.ifft(sideSliverReal,sideSliverImag);
-            for(var j = 0; j<bins; j++){
-                left[i*bins/2+k]+=monoSliverReal[k]+sideSliverRea[k];
-                right[i*bins/2+k]+=monoSliverReal[k]-sideSliverRea[k];
-            }
-        }
-    
-        for (var i = 0; i<origLength; i++){
-            data.left[i]= left[bins/2+i];
-            data.right[i]= right[bins/2+i];
-        }
-        var newLeft = SRConverter(data.left,44100,desiredSampleRate);
-        var newRight = SRConverter(data.right,44100,desiredSampleRate);
-        var mastered ={
-            float:true,
-            symmetric:true,
-            bitDepth:32,
-            sampleRate:44100,
-            channelData:[
-                newLeft,
-                newRight
-            ]
-        } 
-        
-        WavEncoder.encode(mastered).then((buffer)=>{
-            fs.writeFileSync('mastered.wav',new Buffer(buffer));
-        });
-    
+    function ratio(bins){
+        this.mono=new Float32Array(bins)
+        this.side=new Float32Array(bins)
     }
+
+    var ratio = new ratio(bins);
+    
+    for (var i =0; i<bins; i++){
+        ratio.mono[i]=referenceTable.monoFFTMean[i]/signalTable.monoFFTMean[i];
+        ratio.side[i]=referenceTable.sideFFTMean[i]/signalTable.sideFFTMean[i];
+    }
+    function soundData(){
+        this.left = Float32Array(signalTable.origLength);
+        this.right = Float32Array(signalTable.origLength);
+        this.left.fill(0);
+        this.right.fill(0);
+    }
+
+    var data= new soundData;
+
+    var iterations = signalTable.it.length;
+
+
+    var left = new Float32Array(signalTable.newLength);
+    var right = new Float32Array(signalTable.newLength);
+    left.fill(0);
+    right.fill(0);
+
+    for (var i =0; i<iterations; i++){
+        var monoSliver = new baseComplexArray(bins);
+        var sideSliver = new baseComplexArray(bins);
+        for(var j = 0; j<bins; j++){
+            monoSliver.real[j]=siginalTable.it[i].bin[j].monoFFTReal*ratio.mono[j];
+            monoSliver.imag[j]=siginalTable.it[i].bin[j].monoFFTImag*ratio.mono[j];
+            sideSliver.real[j]=siginalTable.it[i].bin[j].sideFFTReal*ratio.side[j];
+            sideSliver.imag[j]=siginalTable.it[i].bin[j].sideFFTImag*ratio.side[j];
+        }
+        monoSliver.InvFFT(monoSliverReal,monoSliverImag);
+        sideSliver.InvFFT(sideSliverReal,sideSliverImag);
+        for(var j = 0; j<bins; j++){
+            left[i*bins/2+k]+=monoSliver.real[k]+sideSliver.real[k];
+            right[i*bins/2+k]+=monoSliver.real[k]-sideSliver.real[k];
+        }
+    }
+
+    for (var i = 0; i<origLength; i++){
+        data.left[i]= left[bins/2+i];
+        data.right[i]= right[bins/2+i];
+    }
+    var newLeft = SRConverter(data.left,44100,desiredSampleRate);
+    var newRight = SRConverter(data.right,44100,desiredSampleRate);
+    var mastered ={
+        float:true,
+        symmetric:true,
+        bitDepth:32,
+        sampleRate:44100,
+        channelData:[
+            newLeft,
+            newRight
+        ]
+    } 
+    
+    WavEncoder.encode(mastered).then((buffer)=>{
+        fs.writeFileSync('mastered.wav',new Buffer(buffer));
+    });
+
+}
     
     var f = new FFT(4);
     var leftOnlyOut = f.createComplexArray()
@@ -1459,10 +1453,7 @@ function reconstruct(signalTable,referenceTable,desiredSampleRate){
 }
 */
 
-function table(rWavPath){
-    readFile(rWavPath).then((buffer)=>{
-        return WavDecoder.decode(buffer);
-    }).then (function(audioData){
+function table(){
         var bins = 1024
         var sampleRate = 44100;
         if (audioData.sampleRate==44100){
