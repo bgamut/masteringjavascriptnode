@@ -953,15 +953,18 @@ function reconstruct(signalTable,referenceTable,desiredSampleRate){
         ],
         forNumpy:arrayForNumpy
     } 
+    var masteredJSON = JSON.stringify(mastered)
 
     localStorage.setItem('mastered.json',JSON.stringify(mastered))
 
     
     var request = new XMLHttpRequest();
+
     "url needs to be updated once flask is deployed"
+    
     request.open('POST','your rest url here',true);
     request.setRequestHeader("content-type","application/json");
-    request.send(JSON.stringify(mastered))
+    request.send(masteredJSON);
 
 }
     
