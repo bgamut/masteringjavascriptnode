@@ -1,14 +1,22 @@
 var reader=new FileReader;
-var progress = document.querySelector('.percent');
+var progressOne = document.querySelector('.percent_one');
+var progressTwo = document.querySelector('.percent_two');
 //window.AudioContext = window.AudioContext || window.webkitAudioContext;
 //var context = new AudioContext();
 //var context = window.AudioContext || window.webkitAudioContext;
-var bufferLeft = new Array;
-var bufferRight = new Array;
-var bufferMono = new Array;
-var bufferLeftOnly = new Array;
-var bufferRightOnly = new Array;
-var bufferSampleRate =0;
+var referenceBufferLeft = new Array;
+var referenceBufferRight = new Array;
+var referenceBufferMono = new Array;
+var referenceBufferLeftOnly = new Array;
+var referenceBufferRightOnly = new Array;
+var referenceBufferSampleRate =0;
+var mainBufferLeft = new Array;
+var mainBufferRight = new Array;
+var mainBufferMono = new Array;
+var mainBufferLeftOnly = new Array;
+var mainBufferRightOnly = new Array;
+var mainBufferSampleRate =0;
+
 function miniFFT(re, im) {
     var N = re.length;
     for (var i = 0; i < N; i++) {
@@ -648,38 +656,49 @@ function errorHandler(evt) {
     };
 }
 
-function updateProgress(evt) {
+function updateProgressOne(evt) {
     // evt is an ProgressEvent.
     if (evt.lengthComputable) {
     var percentLoaded = Math.round((evt.loaded / evt.total) * 100);
     // Increase the progress bar length.
     if (percentLoaded < 100) {
-        progress.style.width = percentLoaded + '%';
-        progress.textContent = percentLoaded + '%';
+        progressOne.style.width = percentLoaded + '%';
+        progressOne.textContent = percentLoaded + '%';
+    }
+    }
+}
+function updateProgressTwo(evt) {
+    // evt is an ProgressEvent.
+    if (evt.lengthComputable) {
+    var percentLoaded = Math.round((evt.loaded / evt.total) * 100);
+    // Increase the progress bar length.
+    if (percentLoaded < 100) {
+        progressTwo.style.width = percentLoaded + '%';
+        progressTwo.textContent = percentLoaded + '%';
     }
     }
 }
 
-function handleMainFileSelect(evt) {
+function handleReferenceFileSelect(evt) {
     // Reset progress indicator on new file selection.
-    progress.style.width = '0%';
-    progress.textContent = '0%';
+    progressOne.style.width = '0%';
+    progressOne.textContent = '0%';
 
     reader = new FileReader();
     reader.readAsArrayBuffer(evt.target.files[0]);
     reader.onerror = errorHandler;
-    reader.onprogress = updateProgress;
+    reader.onprogress = updateProgressOne;
     reader.onabort = function(e) {
     alert('File read cancelled');
     };
     reader.onloadstart = function(e) {
-    document.getElementById('progress_bar').className = 'loading';
+    document.getElementById('progress_bar_one').className = 'loading';
     };
     reader.onload = function(e) {
     // Ensure that the progress bar displays 100% at the end.
-    progress.style.width = '100%';
-    progress.textContent = '100%';
-    setTimeout("document.getElementById('progress_bar').className='';", 2000);
+    progressOne.style.width = '100%';
+    progressOne.textContent = '100%';
+    setTimeout("document.getElementById('progress_bar_one').className='';", 2000);
     var arrayBuffer = this.result;
     var byteOffset= 0;
     var bufferlength=0;
@@ -731,46 +750,158 @@ function handleMainFileSelect(evt) {
 
     if(bitrate==16 && channels==2){
         for (var i=0; i<Math.ceil(sampleLength/2); i++){
-            bufferLeft.push(intBuffer[11+i]&0x0000ffff/max_number)
-            bufferRight.push(intBuffer[11+i]&0xffff0000/max_number)
+            referenceBufferLeft.push(intBuffer[11+i]&0x0000ffff/max_number)
+            referenceBufferRight.push(intBuffer[11+i]&0xffff0000/max_number)
         }
     }
     else if (bitrate==16 && channels ==1){
         for (var i=0; i<Math.ceil(sampleLength/2); i++){
-            bufferLeft.push(intBuffer[11+i]&0x0000ffff/max_number)
-            bufferLeft.push(intBuffer[11+i]&0xffff0000/max_number)
-            bufferRight.push(intBuffer[11+i]&0x0000ffff/max_number)
-            bufferRight.push(intBuffer[11+i]&0xffff0000/max_number)
+            referenceBufferLeft.push(intBuffer[11+i]&0x0000ffff/max_number)
+            referenceBufferLeft.push(intBuffer[11+i]&0xffff0000/max_number)
+            referenceBufferRight.push(intBuffer[11+i]&0x0000ffff/max_number)
+            referenceBufferRight.push(intBuffer[11+i]&0xffff0000/max_number)
         }
     }
     if(bitrate==32 && channels==2){
         for (var i=0; i<sampleLength; i++){
-            bufferLeft.push(intBuffer[11+i]&0x0000ffff/max_number)
-            bufferRight.push(intBuffer[11+i]&0xffff0000/max_number)
+            referenceBufferLeft.push(intBuffer[11+i]&0x0000ffff/max_number)
+            referenceBufferRight.push(intBuffer[11+i]&0xffff0000/max_number)
         }
     }
     else if (bitrate==32 && channels ==1){
         for (var i=0; i<sampleLength; i++){
-            bufferLeft.push(intBuffer[11+i]&0x0000ffff/max_number)
-            bufferLeft.push(intBuffer[11+i]&0xffff0000/max_number)
-            bufferRight.push(intBuffer[11+i]&0x0000ffff/max_number)
-            bufferRight.push(intBuffer[11+i]&0xffff0000/max_number)
+            referenceBufferLeft.push(intBuffer[11+i]&0x0000ffff/max_number)
+            referenceBufferLeft.push(intBuffer[11+i]&0xffff0000/max_number)
+            referenceBufferRight.push(intBuffer[11+i]&0x0000ffff/max_number)
+            referenceBufferRight.push(intBuffer[11+i]&0xffff0000/max_number)
         }
     }
-    for (var i=0; i<bufferLeft.length; i++){
-        bufferLeft[i]=(bufferLeft[i]-0.5)*2.0
-        bufferRight[i]=(bufferRight[i]-0.5)*2.0
-        bufferMono[i]=(bufferLeft[i]/2.0+bufferRight[i]/2.0)
-        bufferLeftOnly[i]=bufferLeft[i]-bufferMono[i]
-        bufferRightOnly[i]=bufferRight[i]-bufferMono[i]
+    for (var i=0; i<referenceBufferLeft.length; i++){
+        referenceBufferLeft[i]=(referenceBufferLeft[i]-0.5)*2.0
+        referenceBufferRight[i]=(referenceBufferRight[i]-0.5)*2.0
+        referenceBufferMono[i]=(referenceBufferLeft[i]/2.0+referenceBufferRight[i]/2.0)
+        referenceBufferLeftOnly[i]=referenceBufferLeft[i]-referenceBufferMono[i]
+        referenceBufferRightOnly[i]=referenceBufferRight[i]-referenceBufferMono[i]
     }
     //console.log(bufferLeft)
     //console.log(bufferRight)
-    console.log(bufferMono)
+    console.log(referenceBufferMono)
     //console.log(bufferLeftOnly)
     //console.log(bufferRightOnly)
     }
 }
+function handleMainFileSelect(evt) {
+    // Reset progress indicator on new file selection.
+    progressTwo.style.width = '0%';
+    progressTwo.textContent = '0%';
+
+    reader = new FileReader();
+    reader.readAsArrayBuffer(evt.target.files[0]);
+    reader.onerror = errorHandler;
+    reader.onprogress = updateProgressTwo;
+    reader.onabort = function(e) {
+    alert('File read cancelled');
+    };
+    reader.onloadstart = function(e) {
+    document.getElementById('progress_bar_two').className = 'loading';
+    };
+    reader.onload = function(e) {
+    // Ensure that the progress bar displays 100% at the end.
+    progressTwo.style.width = '100%';
+    progressTwo.textContent = '100%';
+    setTimeout("document.getElementById('progress_bar_two').className='';", 2000);
+    var arrayBuffer = this.result;
+    var byteOffset= 0;
+    var bufferlength=0;
+    var sound=null;
+    //var floatBuffer = new Float32Array(arrayBuffer,byteOffset,bufferlength)
+    //var floatBuffer = new Float32Array(arrayBuffer)
+
+    var intBuffer= new Int32Array(arrayBuffer)
+    var bitwise = new Array
+    var stringwise = new Array
+    for (var i = 0; i<intBuffer.length; i++){
+        bitwise.push(intBuffer[i]&0x0000ffff);
+        bitwise.push((intBuffer[i]&0xffff0000)>>16);
+        stringwise.push((intBuffer[i]&0x0000ffff).toString(16));
+        stringwise.push(((intBuffer[i]&0xffff0000)>>16).toString(16));
+    }
+    console.log(intBuffer)
+    /*
+    console.log(bitwise)
+    console.log(stringwise)
+    */
+    
+    bufferSampleRate=intBuffer[6];
+    var channels=bitwise[11]
+    var bitrate = intBuffer[7]/bufferSampleRate/channels*8
+    /*
+    var bitdepth = null;
+    if (bitrate ==8){
+        bitdepth =1;
+    }
+    else if(bitrate ==16){
+        bitdepth=2;
+    }
+    else if(bitrate ==32){
+        bitdepth=4;
+    }
+    */
+    var max_number = 2**(bitrate-1);
+    var subchunk = intBuffer[5];
+    var bitdepth = bitrate/8;
+    var sampleLength=(intBuffer[1]-36)/bitdepth/channels;
+
+
+
+    console.log('sr : '+bufferSampleRate)
+    console.log('channels : '+channels)
+    console.log('bitrate : ' +bitrate)
+    console.log('sampleLength : ' +sampleLength)
+
+    if(bitrate==16 && channels==2){
+        for (var i=0; i<Math.ceil(sampleLength/2); i++){
+            mainBufferLeft.push(intBuffer[11+i]&0x0000ffff/max_number)
+            mainBufferRight.push(intBuffer[11+i]&0xffff0000/max_number)
+        }
+    }
+    else if (bitrate==16 && channels ==1){
+        for (var i=0; i<Math.ceil(sampleLength/2); i++){
+            mainBufferLeft.push(intBuffer[11+i]&0x0000ffff/max_number)
+            mainBufferLeft.push(intBuffer[11+i]&0xffff0000/max_number)
+            mainBufferRight.push(intBuffer[11+i]&0x0000ffff/max_number)
+            mainBufferRight.push(intBuffer[11+i]&0xffff0000/max_number)
+        }
+    }
+    if(bitrate==32 && channels==2){
+        for (var i=0; i<sampleLength; i++){
+            mainBufferLeft.push(intBuffer[11+i]&0x0000ffff/max_number)
+            mainBufferRight.push(intBuffer[11+i]&0xffff0000/max_number)
+        }
+    }
+    else if (bitrate==32 && channels ==1){
+        for (var i=0; i<sampleLength; i++){
+            mainBufferLeft.push(intBuffer[11+i]&0x0000ffff/max_number)
+            mainBufferLeft.push(intBuffer[11+i]&0xffff0000/max_number)
+            mainBufferRight.push(intBuffer[11+i]&0x0000ffff/max_number)
+            mainBufferRight.push(intBuffer[11+i]&0xffff0000/max_number)
+        }
+    }
+    for (var i=0; i<mainBufferLeft.length; i++){
+        mainBufferLeft[i]=(mainBufferLeft[i]-0.5)*2.0
+        mainBufferRight[i]=(mainBufferRight[i]-0.5)*2.0
+        mainBufferMono[i]=(mainBufferLeft[i]/2.0+mainBufferRight[i]/2.0)
+        mainBufferLeftOnly[i]=mainBufferLeft[i]-mainBufferMono[i]
+        mainBufferRightOnly[i]=mainBufferRight[i]-mainBufferMono[i]
+    }
+    //console.log(bufferLeft)
+    //console.log(bufferRight)
+    console.log(mainBufferMono)
+    //console.log(bufferLeftOnly)
+    //console.log(bufferRightOnly)
+    }
+}
+
 var bins = 1024
 function table(left, right, originalSampleRate){
     var sampleRate = 44100;
@@ -881,7 +1012,7 @@ function table(left, right, originalSampleRate){
     
     
     
-function reconstruct(signalTable,referenceTable,desiredSampleRate){
+function reconstruct(signalTable,referenceTable,desiredSampleRate=44100){
     
     var newLength=signalTable.newLength;
     
@@ -967,7 +1098,7 @@ function reconstruct(signalTable,referenceTable,desiredSampleRate){
     request.send(masteredJSON);
 
 }
-    
+    /*
     var f = new FFT(4);
     var leftOnlyOut = f.createComplexArray()
     var rightOnlyOut = f.createComplexArray()
@@ -976,7 +1107,7 @@ function reconstruct(signalTable,referenceTable,desiredSampleRate){
     var rightOnlyData = f.toComplexArray(bufferRightOnly)
     var monoOnlyData = f.toComplexArray(bufferMono)
     console.log(monoOnlyData)
-    /*
+    
     f.transform(leftOnlyData,leftOnlyOut)
     f.transform(rightOnlyData,rightOnlyOut)
     f.transform(bufferMono,monoOnlyOut)
@@ -984,7 +1115,7 @@ function reconstruct(signalTable,referenceTable,desiredSampleRate){
     console.log("realtransform")
     
     console.log(monoOnlyOut)
-    */
+    
     f.inverseTransform(leftOnlyOut,leftOnlyData)
     f.inverseTransform(rightOnlyOut,rightOnlyData)
     f.inverseTransform(monoOnlyOut,monoOnlyData)
@@ -992,7 +1123,7 @@ function reconstruct(signalTable,referenceTable,desiredSampleRate){
 
     
     //console.log(bufferSampleRate)
-    /*
+    
     contex.decodeAudioData(arrayBuffer,(
         function(buffer){
             sound=buffer;
@@ -1016,8 +1147,7 @@ function reconstruct(signalTable,referenceTable,desiredSampleRate){
 
     */
 
-    }
-}
+    
 
 class baseComplexArray {
     constructor(other, arrayType = Float32Array) {

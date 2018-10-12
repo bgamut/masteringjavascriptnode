@@ -1,6 +1,6 @@
 
 <style>
-    #progress_bar {
+    #progress_bar_one {
       margin: 10px 0;
       padding: 3px;
       border: 1px solid #000;
@@ -11,19 +11,40 @@
       -o-transition: opacity 1s linear;
       -webkit-transition: opacity 1s linear;
     }
-    #progress_bar.loading {
+    #progress_bar_one.loading {
       opacity: 1.0;
     }
-    #progress_bar .percent {
+    #progress_bar_one .percent {
+      background-color: #99ccff;
+      height: auto;
+      width: 0;
+    }
+    #progress_bar_two {
+      margin: 10px 0;
+      padding: 3px;
+      border: 1px solid #000;
+      font-size: 14px;
+      clear: both;
+      opacity: 0;
+      -moz-transition: opacity 1s linear;
+      -o-transition: opacity 1s linear;
+      -webkit-transition: opacity 1s linear;
+    }
+    #progress_bar_two.loading {
+      opacity: 1.0;
+    }
+    #progress_bar_two .percent {
       background-color: #99ccff;
       height: auto;
       width: 0;
     }
   </style>
   
-  <input type="file" id="files" name="file" />
+  <input type="file" id="referencefile" name="file" />
+  <input type="file" id ="mainfile" name ="file"/>
   <button onclick="abortRead();">Cancel read</button>
-  <div id="progress_bar"><div class="percent">0%</div></div>
+  <div id="progress_bar_one" class="percent_one" name='percent_one'>0%</div>
+  <div id="progress_bar_two" class="percent_two" name='percent_two'>0%</div>
   <!--
       <script src='https://cdn.rawgit.com/bgamut/masteringjavascriptnode/0c096680/cdn.js'></script>
   
@@ -44,7 +65,9 @@
 -->
   <script>
     
-    document.getElementById('files').addEventListener('change', handleFileSelect, false);
+    document.getElementById('referencefile').addEventListener('change', handleReferenceFileSelect, false);
+    document.getElementById('mainfile').addEventListener('change', handleMainFileSelect, false);
+    /*
     var left = bufferLeft;
     var right = bufferRight;
     var mono = bufferMono;
@@ -52,6 +75,6 @@
     var rightOnly = bufferRightOnly;
     var array = new Float32Array;
     var id = new ComplexArray(8,array.ArrayType);
-
+    */
   </script>
   
