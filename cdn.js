@@ -9,12 +9,14 @@ var referenceBufferMono = new Array;
 var referenceBufferLeftOnly = new Array;
 var referenceBufferRightOnly = new Array;
 var referenceBufferSampleRate =0;
+var referencOnline = false;
 var mainBufferLeft = new Array;
 var mainBufferRight = new Array;
 var mainBufferMono = new Array;
 var mainBufferLeftOnly = new Array;
 var mainBufferRightOnly = new Array;
 var mainBufferSampleRate =0;
+var mainOnline = false;
 
 function miniFFT(re, im) {
     var N = re.length;
@@ -710,9 +712,9 @@ function handleReferenceFileSelect(evt) {
     console.log(stringwise)
     */
     
-    bufferSampleRate=intBuffer[6];
+    referenceBufferSampleRate=intBuffer[6];
     var channels=bitwise[11]
-    var bitrate = intBuffer[7]/bufferSampleRate/channels*8
+    var bitrate = intBuffer[7]/referenceBufferSampleRate/channels*8
     /*
     var bitdepth = null;
     if (bitrate ==8){
@@ -732,7 +734,7 @@ function handleReferenceFileSelect(evt) {
 
 
 
-    console.log('sr : '+bufferSampleRate)
+    console.log('sr : '+referenceBufferSampleRate)
     console.log('channels : '+channels)
     console.log('bitrate : ' +bitrate)
     console.log('sampleLength : ' +sampleLength)
@@ -777,6 +779,12 @@ function handleReferenceFileSelect(evt) {
     console.log(referenceBufferMono)
     //console.log(bufferLeftOnly)
     //console.log(bufferRightOnly)
+    var referenceTable = table(referenceBufferLeft, referenceBufferRight, referenceBufferSampleRate);
+    referenceOnline=true;
+    }
+    if(mainOnline===true){
+        var JSONdata = reconstruct(mainTable,referenceTable,44100);
+        send_data_to_server(JSONdata)
     }
 }
 function handleMainFileSelect(evt) {
@@ -821,9 +829,9 @@ function handleMainFileSelect(evt) {
     console.log(stringwise)
     */
     
-    bufferSampleRate=intBuffer[6];
+    mainBufferSampleRate=intBuffer[6];
     var channels=bitwise[11]
-    var bitrate = intBuffer[7]/bufferSampleRate/channels*8
+    var bitrate = intBuffer[7]/mainBufferSampleRate/channels*8
     /*
     var bitdepth = null;
     if (bitrate ==8){
@@ -843,7 +851,7 @@ function handleMainFileSelect(evt) {
 
 
 
-    console.log('sr : '+bufferSampleRate)
+    console.log('sr : '+mainBufferSampleRate)
     console.log('channels : '+channels)
     console.log('bitrate : ' +bitrate)
     console.log('sampleLength : ' +sampleLength)
@@ -888,6 +896,14 @@ function handleMainFileSelect(evt) {
     console.log(mainBufferMono)
     //console.log(bufferLeftOnly)
     //console.log(bufferRightOnly)
+    var mainTable = table(mainBufferLeft, mainBufferRight, mainBufferSampleRate);
+    mainOnline=true;
+    }
+    if(referenceOnline===true){
+        
+        
+        var JSONdata = reconstruct(mainTable,referenceTable,44100);
+        send_data_to_server(JSONdata)
     }
 }
 
@@ -1001,7 +1017,7 @@ function table(left, right, originalSampleRate){
     
     
     
-function reconstruct(signalTable,referenceTable,desiredSampleRate=44100){
+function reconstruct(signalTable,referenceTable,desiredSampleRate){
     
     var newLength=signalTable.newLength;
     
@@ -1076,16 +1092,18 @@ function reconstruct(signalTable,referenceTable,desiredSampleRate=44100){
     var masteredJSON = JSON.stringify(mastered)
 
     localStorage.setItem('mastered.json',JSON.stringify(mastered))
-
+    return masteredJSON
     
+
+}
+function send_data_to_server(data){
     var request = new XMLHttpRequest();
 
     "url needs to be updated once flask is deployed"
 
     request.open('POST','your rest url here',true);
     request.setRequestHeader("content-type","application/json");
-    request.send(masteredJSON);
-
+    request.send(data);
 }
     /*
     var f = new FFT(4);
