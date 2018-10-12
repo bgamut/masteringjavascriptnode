@@ -10,8 +10,7 @@ from os.path import basename
 username = 'my-address@gmail.com'
 password = 'top-secret'
 default_address = ['my-address2@gmail.com']
-def send_mail(send_from: str, subject: str, text: str, 
-send_to: list, files= None):
+def send_mail(send_from: str, subject: str, text: str, send_to: list, files= None):
 
     send_to= default_address if not send_to else send_to
 
@@ -48,20 +47,30 @@ scipy.io.wavfile.read returns
        [0, 0],
        [0, 0]], dtype=int16))
 """
-length=100000
-
+"""
+length=100
 data = np.zeros((length,2),dtype='int16')
 data /= np.max(np.abs(data))
 data *= 32767
 write('master.wav',44100,data)
-
+"""
 from flask import Flask, request, jsonify
 
 app= Flask(__name__)
-@app.route('/sendmime',methods=['GET'])
-def send_mime_email():
+@app.route('/sendmime/<uuid>',methods=['GET','POST'])
+def send_mime_email(uuid):
+    content = request.get_json(silent=False)
+    print(content)
+    print(uuid)
+    length=len(content.forNumpy)
+    data = np.zeros((length,2),dtype='int16')
+    for i in len(content.forNumpy):
+        data[i]=content.forNumpy[i]
+    """
     left = request.args.get('left',None)
     right = request.args.get('right',None)
-
+    """
+    write('master.wav',44100,data)
+    send_mail('bernardahn@squwbs.com','Your Mastered Sound File Is Here!', 'Download the attached file! Enjoy!', 'bgamut@gmail.com', '/master.wav')
 if __name__ == '__main__':
     app.run(debug=True)

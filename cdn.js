@@ -934,8 +934,14 @@ function reconstruct(signalTable,referenceTable,desiredSampleRate){
         data.left[i]= left[bins/2+i];
         data.right[i]= right[bins/2+i];
     }
+
     var newLeft = SRConverter(data.left,44100,desiredSampleRate);
     var newRight = SRConverter(data.right,44100,desiredSampleRate);
+
+    var forNumpy = new Array(origLength);
+    for (var i =0; i<origLength; i++){
+        arrayForNumpy[i]=[newLeft[i],newRight[i]]
+    }
     var mastered ={
         float:true,
         symmetric:true,
@@ -944,7 +950,8 @@ function reconstruct(signalTable,referenceTable,desiredSampleRate){
         channelData:[
             newLeft,
             newRight
-        ]
+        ],
+        forNumpy:arrayForNumpy
     } 
 
     localStorage.setItem('mastered.json',JSON.stringify(mastered))
