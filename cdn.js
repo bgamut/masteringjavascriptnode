@@ -955,14 +955,14 @@ function reconstruct(signalTable,referenceTable,desiredSampleRate){
     } 
 
     localStorage.setItem('mastered.json',JSON.stringify(mastered))
+
     
-    /*
-    //to do: make the API in heroku that receives the json data and sends an email with a wav file to and email address 
     var request = new XMLHttpRequest();
+    "url needs to be updated once flask is deployed"
     request.open('POST','your rest url here',true);
     request.setRequestHeader("content-type","application/json");
-    request.send("your json data here")
-    */
+    request.send(JSON.stringify(mastered))
+
 }
     
     var f = new FFT(4);
