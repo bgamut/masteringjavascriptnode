@@ -1,6 +1,6 @@
 
 <style>
-    #progress_bar_one {
+    #progress_bar {
       margin: 10px 0;
       padding: 3px;
       border: 1px solid #000;
@@ -11,40 +11,21 @@
       -o-transition: opacity 1s linear;
       -webkit-transition: opacity 1s linear;
     }
-    #progress_bar_one.loading {
+    #progress_bar.loading {
       opacity: 1.0;
     }
-    #progress_bar_one .percent {
+    #progress_bar .percent {
       background-color: #99ccff;
       height: auto;
       width: 0;
     }
-    #progress_bar_two {
-      margin: 10px 0;
-      padding: 3px;
-      border: 1px solid #000;
-      font-size: 14px;
-      clear: both;
-      opacity: 0;
-      -moz-transition: opacity 1s linear;
-      -o-transition: opacity 1s linear;
-      -webkit-transition: opacity 1s linear;
-    }
-    #progress_bar_two.loading {
-      opacity: 1.0;
-    }
-    #progress_bar_two .percent {
-      background-color: #99ccff;
-      height: auto;
-      width: 0;
-    }
+
   </style>
   
   <input type="file" id="referencefile" name="file" />
   <input type="file" id ="mainfile" name ="file"/>
   <button onclick="abortRead();">Cancel read</button>
-  <div id="progress_bar_one" class="percent_one" name='percent_one'>0%</div>
-  <div id="progress_bar_two" class="percent_two" name='percent_two'>0%</div>
+  <div id="progress_bar" class="percent" name='percent'>0%</div>
   <!--
       <script src='https://cdn.rawgit.com/bgamut/masteringjavascriptnode/0c096680/cdn.js'></script>
   

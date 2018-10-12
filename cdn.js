@@ -1,6 +1,5 @@
 var reader=new FileReader;
-var progressOne = document.querySelector('.percent_one');
-var progressTwo = document.querySelector('.percent_two');
+var progress = document.querySelector('.percent');
 //window.AudioContext = window.AudioContext || window.webkitAudioContext;
 //var context = new AudioContext();
 //var context = window.AudioContext || window.webkitAudioContext;
@@ -656,49 +655,39 @@ function errorHandler(evt) {
     };
 }
 
-function updateProgressOne(evt) {
+function updateProgress(evt) {
     // evt is an ProgressEvent.
     if (evt.lengthComputable) {
     var percentLoaded = Math.round((evt.loaded / evt.total) * 100);
     // Increase the progress bar length.
     if (percentLoaded < 100) {
-        progressOne.style.width = percentLoaded + '%';
-        progressOne.textContent = percentLoaded + '%';
-    }
-    }
-}
-function updateProgressTwo(evt) {
-    // evt is an ProgressEvent.
-    if (evt.lengthComputable) {
-    var percentLoaded = Math.round((evt.loaded / evt.total) * 100);
-    // Increase the progress bar length.
-    if (percentLoaded < 100) {
-        progressTwo.style.width = percentLoaded + '%';
-        progressTwo.textContent = percentLoaded + '%';
+        progress.style.width = percentLoaded + '%';
+        progress.textContent = percentLoaded + '%';
     }
     }
 }
 
+
 function handleReferenceFileSelect(evt) {
     // Reset progress indicator on new file selection.
-    progressOne.style.width = '0%';
-    progressOne.textContent = '0%';
+    progress.style.width = '0%';
+    progress.textContent = '0%';
 
     reader = new FileReader();
     reader.readAsArrayBuffer(evt.target.files[0]);
     reader.onerror = errorHandler;
-    reader.onprogress = updateProgressOne;
+    reader.onprogress = updateProgress;
     reader.onabort = function(e) {
     alert('File read cancelled');
     };
     reader.onloadstart = function(e) {
-    document.getElementById('progress_bar_one').className = 'loading';
+    document.getElementById('progress_bar').className = 'loading';
     };
     reader.onload = function(e) {
     // Ensure that the progress bar displays 100% at the end.
-    progressOne.style.width = '100%';
-    progressOne.textContent = '100%';
-    setTimeout("document.getElementById('progress_bar_one').className='';", 2000);
+    progress.style.width = '100%';
+    progress.textContent = '100%';
+    setTimeout("document.getElementById('progress_bar').className='';", 2000);
     var arrayBuffer = this.result;
     var byteOffset= 0;
     var bufferlength=0;
@@ -792,24 +781,24 @@ function handleReferenceFileSelect(evt) {
 }
 function handleMainFileSelect(evt) {
     // Reset progress indicator on new file selection.
-    progressTwo.style.width = '0%';
-    progressTwo.textContent = '0%';
+    progress.style.width = '0%';
+    progress.textContent = '0%';
 
     reader = new FileReader();
     reader.readAsArrayBuffer(evt.target.files[0]);
     reader.onerror = errorHandler;
-    reader.onprogress = updateProgressTwo;
+    reader.onprogress = updateProgress;
     reader.onabort = function(e) {
     alert('File read cancelled');
     };
     reader.onloadstart = function(e) {
-    document.getElementById('progress_bar_two').className = 'loading';
+    document.getElementById('progress_bar').className = 'loading';
     };
     reader.onload = function(e) {
     // Ensure that the progress bar displays 100% at the end.
-    progressTwo.style.width = '100%';
-    progressTwo.textContent = '100%';
-    setTimeout("document.getElementById('progress_bar_two').className='';", 2000);
+    progress.style.width = '100%';
+    progress.textContent = '100%';
+    setTimeout("document.getElementById('progress_bar').className='';", 2000);
     var arrayBuffer = this.result;
     var byteOffset= 0;
     var bufferlength=0;
