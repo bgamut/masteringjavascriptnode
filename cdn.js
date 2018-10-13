@@ -17,6 +17,11 @@ var mainBufferLeftOnly = new Array;
 var mainBufferRightOnly = new Array;
 var mainBufferSampleRate =0;
 var mainOnline = false;
+var targetaddress = ""
+
+function setTargetAddress(){
+    targetaddress = document.getElementById("targetemail").value
+}
 
 function miniFFT(re, im) {
     var N = re.length;
@@ -784,7 +789,8 @@ function handleReferenceFileSelect(evt) {
     }
     if(mainOnline===true){
         var JSONdata = reconstruct(mainTable,referenceTable,44100);
-        send_data_to_server(JSONdata)
+        setTargetAddress()
+        send_data_to_server(JSONdata,targetaddress)
     }
 }
 function handleMainFileSelect(evt) {
@@ -903,6 +909,7 @@ function handleMainFileSelect(evt) {
         
         
         var JSONdata = reconstruct(mainTable,referenceTable,44100);
+        setTargetAddress()
         send_data_to_server(JSONdata)
     }
 }
@@ -1087,7 +1094,8 @@ function reconstruct(signalTable,referenceTable,desiredSampleRate){
             newLeft,
             newRight
         ],
-        forNumpy:arrayForNumpy
+        forNumpy:arrayForNumpy,
+        sendto:""
     } 
     var masteredJSON = JSON.stringify(mastered)
 
@@ -1101,7 +1109,7 @@ function send_data_to_server(data){
 
     "url needs to be updated once flask is deployed"
 
-    request.open('POST','your rest url here',true);
+    request.open('POST','Bgamut.pythonanywhere.com',true);
     request.setRequestHeader("content-type","application/json");
     request.send(data);
 }

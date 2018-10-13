@@ -1,28 +1,26 @@
-"""
-useitlike this
-http://127.0.0.1:5000/sendmime?left=number1&right=number2
-"""
-import smtplib
+
+# A very simple Flask Hello World app for you to get started with...
+
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 from os.path import basename
-username = 'my-address@gmail.com'
-password = 'top-secret'
-default_address = ['my-address2@gmail.com']
+username = 'bernardahn@squwbs.com'
+password = 'sodlfdmftksek'
+default_address = ['bgamut@gmail.com','atomme79@gmail.com']
 def send_mail(send_from: str, subject: str, text: str, send_to: list, files= None):
 
     send_to= default_address if not send_to else send_to
 
     msg = MIMEMultipart()
     msg['From'] = send_from
-    msg['To'] = ', '.join(send_to)  
+    msg['To'] = ', '.join(send_to)
     msg['Subject'] = subject
 
     msg.attach(MIMEText(text))
 
     for f in files or []:
-        with open(f, "rb") as fil: 
+        with open(f, "rb") as fil:
             ext = f.split('.')[-1:]
             attachedfile = MIMEApplication(fil.read(), _subtype = ext)
             attachedfile.add_header(
@@ -30,7 +28,7 @@ def send_mail(send_from: str, subject: str, text: str, send_to: list, files= Non
         msg.attach(attachedfile)
 
 
-    smtp = smtplib.SMTP(host="smtp.gmail.com", port= 587) 
+    smtp = smtplib.SMTP(host="smtp.gmail.com", port= 587)
     smtp.starttls()
     smtp.login(username,password)
     smtp.sendmail(send_from, send_to, msg.as_string())
@@ -64,6 +62,7 @@ def send_mime_email(uuid):
     print(uuid)
     length=len(content.forNumpy)
     data = np.zeros((length,2),dtype='int16')
+    sendto = content.sendto
     for i in len(content.forNumpy):
         data[i]=content.forNumpy[i]
     """
@@ -71,6 +70,6 @@ def send_mime_email(uuid):
     right = request.args.get('right',None)
     """
     write('master.wav',44100,data)
-    send_mail('bernardahn@squwbs.com','Your Mastered Sound File Is Here!', 'Download the attached file! Enjoy!', 'bgamut@gmail.com', '/master.wav')
+    send_mail('bernardahn@squwbs.com','Your Mastered Sound File Is Here!', 'Download the attached file! Enjoy!', sendto, '/master.wav')
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
