@@ -1,5 +1,6 @@
 
 # A very simple Flask Hello World app for you to get started with...
+from socket import gethostname
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -71,5 +72,7 @@ def send_mime_email(uuid):
     """
     write('master.wav',44100,data)
     send_mail('bernardahn@squwbs.com','Your Mastered Sound File Is Here!', 'Download the attached file! Enjoy!', sendto, '/master.wav')
+
 if __name__ == '__main__':
-    app.run()
+    if 'liveconsole' not in gethostname():
+        app.run()
