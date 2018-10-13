@@ -926,7 +926,7 @@ function table(left, right, originalSampleRate){
         var right = SRConverter(right,originalSampleRate,44100);
     }
     var origLength = left.length;
-    var newLength = Math.floor(origLength/bins)+(bins)*2;
+    var newLength = origLength+(bins-(origLength%bins));
     var mono = new Float64Array(newLength);
     var side = new Float64Array(newLength);
     var iterations = (newLength/bins)*2-1;
@@ -955,7 +955,23 @@ function table(left, right, originalSampleRate){
         
     }
     function t(){
+        console.log(origLength)
+        console.log(newLength)
+        console.log(iterations)
+        /*
         this.it= new Array(iterations)
+        */
+        this.it = new Array(iterations);
+        /*
+        for (var i=0; i<iterations; i+=1){
+            this.it[i]=new Array(bins);
+        }
+        for (var i=0; i<iterations; i+=1){
+            for (var j=0; j<bins; j+=1){
+                this.it[i][j]=new bin();
+            }
+        }
+        */
         this.monoMean = 0;
         this.sideMean = 0;
         this.monoFFTMean = new Float32Array(bins);
@@ -973,7 +989,7 @@ function table(left, right, originalSampleRate){
         }
     }
     
-
+    var t = new t;
 
 
     // transform left/right to mono/side with zero padding
@@ -1095,11 +1111,13 @@ function reconstruct(signalTable,referenceTable,desiredSampleRate){
             newRight
         ],
         forNumpy:arrayForNumpy,
-        sendto:""
+        sendto:null
     } 
     var masteredJSON = JSON.stringify(mastered)
 
+    /*
     localStorage.setItem('mastered.json',JSON.stringify(mastered))
+    */
     return masteredJSON
     
 
