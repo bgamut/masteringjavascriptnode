@@ -1,13 +1,13 @@
 
 # A very simple Flask Hello World app for you to get started with...
-
+import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 from os.path import basename
 username = 'bernardahn@squwbs.com'
 password = 'sodlfdmftksek'
-default_address = ['bgamut@gmail.com','atomme79@gmail.com']
+default_address = ['atomme79@gmail.com']
 def send_mail(send_from: str, subject: str, text: str, send_to: list, files= None):
 
     send_to= default_address if not send_to else send_to

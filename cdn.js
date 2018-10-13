@@ -1109,7 +1109,7 @@ function send_data_to_server(data){
 
     "url needs to be updated once flask is deployed"
 
-    request.open('POST','Bgamut.pythonanywhere.com',true);
+    request.open('POST','bernardahn.pythonanywhere.com',true);
     request.setRequestHeader("content-type","application/json");
     request.send(data);
 }
