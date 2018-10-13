@@ -665,12 +665,12 @@ function errorHandler(evt) {
 function updateProgress(evt) {
     // evt is an ProgressEvent.
     if (evt.lengthComputable) {
-    var percentLoaded = Math.round((evt.loaded / evt.total) * 100);
-    // Increase the progress bar length.
-    if (percentLoaded < 100) {
-        progress.style.width = percentLoaded + '%';
-        progress.textContent = percentLoaded + '%';
-    }
+        var percentLoaded = Math.round((evt.loaded / evt.total) * 100);
+        // Increase the progress bar length.
+        if (percentLoaded < 100) {
+            progress.style.width = percentLoaded + '%';
+            progress.textContent = percentLoaded + '%';
+        }
     }
 }
 
@@ -711,7 +711,7 @@ function handleReferenceFileSelect(evt) {
         stringwise.push((intBuffer[i]&0x0000ffff).toString(16));
         stringwise.push(((intBuffer[i]&0xffff0000)>>16).toString(16));
     }
-    console.log(intBuffer)
+    console.log(" file read is done ")
     /*
     console.log(bitwise)
     console.log(stringwise)
@@ -738,11 +738,6 @@ function handleReferenceFileSelect(evt) {
     var sampleLength=(intBuffer[1]-36)/bitdepth/channels;
 
 
-
-    console.log('sr : '+referenceBufferSampleRate)
-    console.log('channels : '+channels)
-    console.log('bitrate : ' +bitrate)
-    console.log('sampleLength : ' +sampleLength)
 
     if(bitrate==16 && channels==2){
         for (var i=0; i<Math.ceil(sampleLength/2); i++){
@@ -781,13 +776,17 @@ function handleReferenceFileSelect(evt) {
     }
     //console.log(bufferLeft)
     //console.log(bufferRight)
-    console.log(referenceBufferMono)
+    //console.log(referenceBufferMono)
     //console.log(bufferLeftOnly)
     //console.log(bufferRightOnly)
+    console.log('initiating tabulation')
     var referenceTable = table(referenceBufferLeft, referenceBufferRight, referenceBufferSampleRate);
     referenceOnline=true;
     }
+    console.log('done tabulating')
+    
     if(mainOnline===true){
+        console.log('initiating json data sending')
         var JSONdata = reconstruct(mainTable,referenceTable,44100);
         setTargetAddress()
         send_data_to_server(JSONdata,targetaddress)
@@ -988,10 +987,15 @@ function table(left, right, originalSampleRate){
             }
         }
     }
-    
+    function evt(){
+        this.total = 0;
+        this.loaded=0;
+    }
+    var evt = new evt;
     var t = new t;
 
 
+    evt.total=iterations;
     // transform left/right to mono/side with zero padding
     for (var i =0; i<origLength; i++){
         mono[i+bins/2] = (left[i]+right[i])/2;
@@ -1025,6 +1029,8 @@ function table(left, right, originalSampleRate){
             t.monoFFTMean[k]+=t.it[i].bin[k].monoFFTAmp/iterations
             t.sideFFTMean[k]+=t.it[i].bin[k].sideFFTAmp/iterations
         }
+        evt.loaded=evt.loaded+1
+        updateProgress(evt)
     }
     // collecting standard deviation value for middle and side
     for (var i = 0; i<iterations; i++){
