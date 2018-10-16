@@ -9,7 +9,7 @@ var reader=new FileReader;
   var referenceBufferLeftOnly = new Array;
   var referenceBufferRightOnly = new Array;
   var referenceBufferSampleRate =0;
-  var referencOnline = false;
+  var referenceOnline = false;
   var referenceTable;
 
   var mainBufferLeft = new Array;
@@ -682,6 +682,22 @@ var reader=new FileReader;
     mainTable = table(mainBufferLeft, mainBufferRight, mainBufferSampleRate);
     referenceTable = table(referenceBufferLeft, referenceBufferRight, referenceBufferSampleRate);
   }
+  var readButtonPressed = function(){
+    return new Promise(function (resolve, reject){
+    resolve('done');
+    reject('rejected')
+  })}
+  var finalFrontier = function(){
+    readButtonPressed.then(function(val){ 
+        tabulation()
+        console.log('initiating json data sending')
+        var JSONdata = reconstruct(mainTable,referenceTable,44100);
+        setTargetAddress();
+        send_data_to_server(JSONdata,targetaddress);
+        resolve('done');
+        reject('rejected')
+    })}
+
   var referenceFileSelect = function(evt){
       return new Promise(function (resolve, reject){
       // Reset progress indicator on new file selection.
@@ -715,7 +731,6 @@ var reader=new FileReader;
           stringwise.push(((intBuffer[i]&0xffff0000)>>16).toString(16));
       };
       console.log("file read is done ");
-      
       referenceBufferSampleRate=intBuffer[6];
       var channels=bitwise[11];
       var bitrate = intBuffer[7]/referenceBufferSampleRate/channels*8;
@@ -763,11 +778,12 @@ var reader=new FileReader;
           referenceBufferLeftOnly[i]=referenceBufferLeft[i]-referenceBufferMono[i];
           referenceBufferRightOnly[i]=referenceBufferRight[i]-referenceBufferMono[i];
       };
-      console.log('initiating tabulation');
+      
+      
+      
+    }
       referenceOnline=true;
-      console.log('done tabulating');
-      }
-      console.log(mainOnline);
+      console.log(referenceOnline);
       resolve('done');
       reject('rejected');
   })
@@ -776,12 +792,8 @@ var reader=new FileReader;
       console.log("something is happening");
       referenceFileSelect(evt).then(function(val){
           console.log(mainOnline);
-          if(mainOnline&&referenceOnline){
-              console.log('initiating json data sending')
-              tabulation();
-              var JSONdata = reconstruct(mainTable,referenceTable,44100);
-              setTargetAddress();
-              send_data_to_server(JSONdata,targetaddress);
+          if(mainOnline === true && referenceOnline === true){
+             console.log("and and")
           };
       });
   };
@@ -790,8 +802,6 @@ var reader=new FileReader;
   var mainFileSelect = function(evt){
       return new Promise(function (resolve, reject){
       // Reset progress indicator on new file selection.
-      progress.style.width = '0%';
-      progress.textContent = '0%';
 
       reader = new FileReader();
       reader.readAsArrayBuffer(evt.target.files[0]);
@@ -800,14 +810,9 @@ var reader=new FileReader;
       reader.onabort = function(e) {
         alert('File read cancelled');
       };
-      reader.onloadstart = function(e) {
-        document.getElementById('progress_bar').className = 'loading';
-      };
+
       reader.onload = function(e) {
-        // Ensure that the progress bar displays 100% at the end.
-        progress.style.width = '100%';
-        progress.textContent = '100%';
-        setTimeout("document.getElementById('progress_bar').className='';", 2000);
+
         var arrayBuffer = this.result;
         var byteOffset= 0;
         var bufferlength=0;
@@ -900,23 +905,15 @@ var reader=new FileReader;
         
         mainOnline=true;
       };
-      var mainTable = table(mainBufferLeft, mainBufferRight, mainBufferSampleRate);
-      if(referenceOnline&&mainOnline){
-          var JSONdata = reconstruct(mainTable,referenceTable,44100);
-          setTargetAddress();
-          send_data_to_server(JSONdata);
-      };
+
   })};
 
   var handleMainFileSelect=function(evt){
     console.log("something is happening");
     mainFileSelect(evt).then(function(val){
         console.log(mainOnline);
-        if(referenceOnline&&mainOnline){
-            console.log('initiating json data sending')
-            var JSONdata = reconstruct(mainTable,referenceTable,44100);
-            setTargetAddress();
-            send_data_to_server(JSONdata,targetaddress);
+        if(referenceOnline===true && mainOnline===true){
+            console.log("and and")
         };
     });
 };
