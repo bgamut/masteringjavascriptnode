@@ -10,6 +10,8 @@ var reader=new FileReader;
   var referenceBufferRightOnly = new Array;
   var referenceBufferSampleRate =0;
   var referencOnline = false;
+  var referenceTable;
+
   var mainBufferLeft = new Array;
   var mainBufferRight = new Array;
   var mainBufferMono = new Array;
@@ -17,6 +19,7 @@ var reader=new FileReader;
   var mainBufferRightOnly = new Array;
   var mainBufferSampleRate =0;
   var mainOnline = false;
+  var mainTable;
   var targetaddress = "";
 
   function setTargetAddress(){
@@ -675,8 +678,11 @@ var reader=new FileReader;
       };
   };
 
-
-  var handleReferenceFileSelect = function(evt){
+  var tabulation=function(){
+    mainTable = table(mainBufferLeft, mainBufferRight, mainBufferSampleRate);
+    referenceTable = table(referenceBufferLeft, referenceBufferRight, referenceBufferSampleRate);
+  }
+  var referenceFileSelect = function(evt){
       return new Promise(function (resolve, reject){
       // Reset progress indicator on new file selection.
       //progress.style.width = '0%';
@@ -708,7 +714,7 @@ var reader=new FileReader;
           stringwise.push((intBuffer[i]&0x0000ffff).toString(16));
           stringwise.push(((intBuffer[i]&0xffff0000)>>16).toString(16));
       };
-      console.log(" file read is done ");
+      console.log("file read is done ");
       
       referenceBufferSampleRate=intBuffer[6];
       var channels=bitwise[11];
@@ -758,7 +764,6 @@ var reader=new FileReader;
           referenceBufferRightOnly[i]=referenceBufferRight[i]-referenceBufferMono[i];
       };
       console.log('initiating tabulation');
-      var referenceTable = table(referenceBufferLeft, referenceBufferRight, referenceBufferSampleRate);
       referenceOnline=true;
       console.log('done tabulating');
       }
@@ -767,12 +772,13 @@ var reader=new FileReader;
       reject('rejected');
   })
 };
-  var afterReferenceFileSelect=function(evt){
+  var handleReferenceFileSelect=function(evt){
       console.log("something is happening");
       referenceFileSelect(evt).then(function(val){
           console.log(mainOnline);
-          if(mainOnline===true){
+          if(mainOnline&&referenceOnline){
               console.log('initiating json data sending')
+              tabulation();
               var JSONdata = reconstruct(mainTable,referenceTable,44100);
               setTargetAddress();
               send_data_to_server(JSONdata,targetaddress);
@@ -781,7 +787,8 @@ var reader=new FileReader;
   };
 
 
-  function handleMainFileSelect(evt) {
+  var mainFileSelect = function(evt){
+      return new Promise(function (resolve, reject){
       // Reset progress indicator on new file selection.
       progress.style.width = '0%';
       progress.textContent = '0%';
@@ -890,19 +897,33 @@ var reader=new FileReader;
         console.log(mainBufferMono);
         //console.log(bufferLeftOnly)
         //console.log(bufferRightOnly)
-        var mainTable = table(mainBufferLeft, mainBufferRight, mainBufferSampleRate);
+        
         mainOnline=true;
       };
-      if(referenceOnline===true){
+      var mainTable = table(mainBufferLeft, mainBufferRight, mainBufferSampleRate);
+      if(referenceOnline&&mainOnline){
           var JSONdata = reconstruct(mainTable,referenceTable,44100);
           setTargetAddress();
           send_data_to_server(JSONdata);
       };
-  };
+  })};
 
+  var handleMainFileSelect=function(evt){
+    console.log("something is happening");
+    mainFileSelect(evt).then(function(val){
+        console.log(mainOnline);
+        if(referenceOnline&&mainOnline){
+            console.log('initiating json data sending')
+            var JSONdata = reconstruct(mainTable,referenceTable,44100);
+            setTargetAddress();
+            send_data_to_server(JSONdata,targetaddress);
+        };
+    });
+};
   var bins = 1024;
   function table(left, right, originalSampleRate){
       var sampleRate = 44100;
+      console.log("in the table function")
       if (originalSampleRate==44100){
           var left = left;
           var right = right;
@@ -986,7 +1007,9 @@ var reader=new FileReader;
       evt.total=iterations;
       */
       // transform left/right to mono/side with zero padding
+      var t = new t;
       for (var i =0; i<origLength; i++){
+          console.log('mono side split : ' + i + ' / '+origLength)
           mono[i+bins/2] = (left[i]+right[i])/2;
           side[i+bins/2] = left[i]-mono;
       };
@@ -994,18 +1017,20 @@ var reader=new FileReader;
       for (var i = 0; i<iterations; i++){
           var monoBin = new baseComplexArray(bins);
           var sideBin = new baseComplexArray(bins);
+          console.log('iteration : ' + i + ' / '+iterations)
           for (var j = 0; j<bins; j++){
               monoBin.real[j]=mono[bins/2*i+j]*Math.sin(j/(bins-1)*Math.PI);
               sideBin.real[j]=side[bins/2*i+j]*Math.sin(j/(bins-1)*Math.PI);
               t.it[i].bin[j].mono=mono[bins*i+j];
               t.it[i].bin[j].side=side[bins*i+j];
+              console.log('copy bin : ' + i+ '-' + j + ' / '+bins)
           };
           monoBin.FFT();
           sideBin.FFT();
 
           //accumulate mean per bin per iterations and get over all mean in the end
           for (var k = 0; k<bins; k++){
-              
+            console.log('FFT bin : '+ i+ '-' + j + ' / '+bins)
               t.it[i].bin[k].monoFFTReal=monoBin.real[k];
               t.it[i].bin[k].sideFFTReal=sideBin.real[k];
               

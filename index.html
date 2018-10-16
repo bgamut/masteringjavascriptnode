@@ -19,12 +19,26 @@
       height: auto;
       width: 0;
     }
-
+    #read{
+      height:auto;
+      width:50%;
+    }
+    #cancel{
+      height:auto;
+      width:50%;
+    }
+    #buttons{
+      width:100%
+    }
   </style>
-  <input type="text" id="targetemail" value='your email here'/>
+  
   <input type="file" id="referencefile" name="file" />
   <input type="file" id ="mainfile" name ="file"/>
-  <button onclick="abortRead();">Cancel read</button>
+  <input type="text" id="targetemail" value='your email here'/>
+  <div id='buttons'>
+  <button id='read' onclick="abortRead();">Read</button>
+  <button id='cancel' onclick="abortRead();">Cancel</button>
+  </div>
   <!--
   <div id="progress_bar" class="percent" name='percent'>0%</div>
   -->
