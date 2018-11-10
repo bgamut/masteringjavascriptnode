@@ -7,9 +7,9 @@ let appIcon = null
 app.on('ready', () => {
   
   const {width,height} =  electron.screen.getPrimaryDisplay().workAreaSize
-  const win= new BrowserWindow({width:125,height:100, transparent:true, skipTaskebar:true, title:'squwbs',frame:true,x:width-125,y:0,appIcon:__dirname + '/static/tray_icon.png'})
+  const win= new BrowserWindow({resizeable:false, width:165, minWidth:165,maxWidth:165,height:97,minHeight:97,maxHeight:97,useContentSize:true,transparent:true, skipTaskebar:true, title:'squwbs',frame:true,x:width-165,y:0,appIcon:__dirname + '/static/img/tray_icon.png',titleBarStyle:"default"})
   win.loadFile('index.html')
-  const tray = new Tray( __dirname + '/static/tray_icon.png')
+  const tray = new Tray( __dirname + '/static/img/tray_icon.png')
 
   tray.on('click',()=>{
     win.isVisible() ? win.hide() : win.show()
