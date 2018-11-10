@@ -1,1 +1,25 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>squwbs</title>
+  </head>
+  <body>
+    <button id = "referenceButton" onclick="document.getElementById('referencefile').click(); return false;">Reference Track</button>
+    <button id = "referenceButton" onclick="document.getElementById('mainfile').click(); return false;">Original Track</button>
+    
+    <!--
+    <input type="email" id="targetemail" placeholder="email@example.com"/>
+  -->
+    <div id='buttons'>
+    <button id='read' onclick="readButtonPressed();">Read</button>
+    <button id='cancel' onclick="abortRead();">Cancel</button>
+    </div>
+    <div>
+    <input type="file" id="referencefile" style = 'visibility:hidden' name ="Reference Track" name="file"/>
+    <input type="file" id ="mainfile" style = 'visibility:hidden' name ="Your Track"name ="file" multiple/>
+    </div>
 
+  </body>
+  <script src=""></script>
+</html>
