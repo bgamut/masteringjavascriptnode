@@ -2,18 +2,49 @@
 <html>
   <head>
     <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="static/css/materialize.css">
     <title>squwbs</title>
+    <style>
+      #referenceButton{
+        width: 100%;
+        clear: both;
+        margin: auto;
+      }
+      #mainButton{
+        width: 100%;
+        clear: both;
+        margin: auto;
+      }
+      #third{
+        width: 100%;
+        clear: both;
+        margin: auto;
+      }
+      #read{
+        width: 50%;
+       
+      }
+      #cancel{
+        width: 50%;
+        
+      }
+    </style>
   </head>
   <body>
-    <button id = "referenceButton" onclick="document.getElementById('referencefile').click(); return false;">Reference Track</button>
-    <button id = "referenceButton" onclick="document.getElementById('mainfile').click(); return false;">Original Track</button>
-    
+  <div>
+    <div id='first'>
+      <a class="waves-effect waves-light btn-small" id = "referenceButton" onclick="document.getElementById('referencefile').click(); return false;">Reference Track</a>
+    </div>
+    <div id='second'>
+      <a class="waves-effect waves-light btn-small" id = "mainButton" onclick="document.getElementById('mainfile').click(); return false;">Original Track</a>
+    </div>
+  </div>
     <!--
     <input type="email" id="targetemail" placeholder="email@example.com"/>
   -->
-    <div id='buttons'>
-    <button id='read' onclick="readButtonPressed();">Read</button>
-    <button id='cancel' onclick="abortRead();">Cancel</button>
+    <div class='row'id='third'>
+    <a class="waves-effect waves-light btn-small col s6" id='read' onclick="readButtonPressed();">Read</a>
+    <a class="waves-effect waves-light btn-small col s6" id='cancel' onclick="abortRead();">Cancel</a>
     </div>
     <div>
     <input type="file" id="referencefile" style = 'visibility:hidden' name ="Reference Track" name="file"/>
@@ -21,5 +52,5 @@
     </div>
 
   </body>
-  <script src=""></script>
+  <script src="static/js/materialize.js"></script>
 </html>
