@@ -2,49 +2,85 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <link rel="stylesheet" type="text/css" href="static/css/materialize.css">
+    
     <title>squwbs</title>
     <style>
       #referenceButton{
+        top: 1px;
+        bottom:1px;
         width: 100%;
         clear: both;
-        margin: auto;
+        margin: 2px;
+        text-align:center;
+        padding:2px;
       }
       #mainButton{
+        top: 1px;
+        bottom:1px;
         width: 100%;
         clear: both;
-        margin: auto;
+        margin: 2px;
+        text-align:center;
+        padding:2px;
       }
       #third{
+        top:5px;
         width: 100%;
         clear: both;
-        margin: auto;
+        margin: 2px;
+        text-align:center;
       }
       #read{
-        width: 50%;
-       
+        margin-top:5px;
+        margin-left:0px;
+        margin-right:0px;
+        margin-bottom:2px;
+        width: 100%;
+        text-align:center;
+        padding:2px;
+        
       }
       #cancel{
-        width: 50%;
-        
+        width: 100%;
+        text-align:center;
+        padding:2px;
+        margin-top:1px;
+        margin-left:0px;
+        margin-right:0px;
+        margin-bottom:1px;
+      }
+      #targetEmail{
+        width:100%;
+        clear: both;
+        margin: auto;
+        text-align:center;
+        display:flex;
+        flex-direction:row;
+        padding:2px;
+        margin:2px;
+        bottom:1px;
       }
     </style>
   </head>
   <body>
   <div>
     <div id='first'>
-      <a class="waves-effect waves-light btn-small" id = "referenceButton" onclick="document.getElementById('referencefile').click(); return false;">Reference Track</a>
+      <button id = "referenceButton" onclick="document.getElementById('referencefile').click(); return false;">Reference Track</button>
     </div>
     <div id='second'>
-      <a class="waves-effect waves-light btn-small" id = "mainButton" onclick="document.getElementById('mainfile').click(); return false;">Original Track</a>
+      <button id = "mainButton" onclick="document.getElementById('mainfile').click(); return false;">Original Track</button>
     </div>
   </div>
     <!--
     <input type="email" id="targetemail" placeholder="email@example.com"/>
   -->
+<div id=>
+  
+</div>
     <div class='row'id='third'>
-    <a class="waves-effect waves-light btn-small col s6" id='read' onclick="readButtonPressed();">Read</a>
-    <a class="waves-effect waves-light btn-small col s6" id='cancel' onclick="abortRead();">Cancel</a>
+    <input type="email" id="targetemail" placeholder="e-mail@address.com"/>
+    <button class="waves-effect waves-light col s6" id='read' onclick="readButtonPressed();">Read</button>
+    <button class="waves-effect waves-light col s6" id='cancel' onclick="abortRead();">Cancel</button>
     </div>
     <div>
     <input type="file" id="referencefile" style = 'visibility:hidden' name ="Reference Track" name="file"/>
@@ -53,4 +89,5 @@
 
   </body>
   <script src="static/js/materialize.js"></script>
+  <script src="static/js/logic.js"></script>
 </html>
