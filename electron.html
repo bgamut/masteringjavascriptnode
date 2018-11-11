@@ -86,6 +86,11 @@
     </div>
 
   </body>
+  <script src="static/js/wavefile.umd.js"></script>
   <script src="static/js/materialize.js"></script>
   <script src="static/js/logic.js"></script>
+  <script>
+    document.getElementById('referencefile').addEventListener('change', handleReferenceFileSelect, false);
+    document.getElementById('mainfile').addEventListener('change', handleMainFileSelect, false);
+  </script>
 </html>
